@@ -3,7 +3,7 @@
 This project has two runtime parts:
 
 - Frontend: Next.js app for the learner UI
-- Backend: local AI service that talks to xAI Grok and powers the chat/analyze/optimize features
+- Backend: local AI service that talks to model and powers the chat/analyze/optimize features
 
 ## Prerequisites
 
@@ -32,7 +32,6 @@ cp .env.example .env.local
 Then edit `backend/.env.local` and set your actual key:
 
 ```env
-GROK_API_KEY=your_real_key_here
 PORT=4000
 ```
 
