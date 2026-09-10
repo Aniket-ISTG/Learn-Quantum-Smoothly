@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useState } from "react";
-
+import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/quantum/supabase";
 import { CircuitEditor } from "@/components/quantum/circuit/circuit-editor";
 import { StateVector } from "@/components/quantum/visualization/state-vector";
 import { ProbabilityDistribution } from "@/components/quantum/visualization/probability-distribution";
@@ -148,9 +149,24 @@ const slug = (x: string) =>
     .replace(/^-|-$/g, "");
 
 function Header() {
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    router.push("/login");
+    router.refresh();
+  };
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/[.07] bg-[#06101d]/80 px-5 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
+        
         <Link
           href="/"
           className="flex items-center gap-2 text-[15px] font-bold tracking-tight"
@@ -158,6 +174,7 @@ function Header() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-cyan-300 text-lg text-slate-950">
             ◈
           </span>
+
           qubit<span className="text-cyan-300">lab</span>
         </Link>
 
@@ -175,12 +192,22 @@ function Header() {
           </Link>
         </nav>
 
-        <Link
-          href="/learn"
-          className="rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-200"
-        >
-          Enter the lab →
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/learn"
+            className="rounded-lg border border-cyan-300/30 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-200"
+          >
+            Enter the lab →
+          </Link>
+
+          <button
+            onClick={handleLogout}
+            className="rounded-lg border border-white/10 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-red-400/30 hover:text-red-300"
+          >
+            Logout
+          </button>
+        </div>
+
       </div>
     </header>
   );
