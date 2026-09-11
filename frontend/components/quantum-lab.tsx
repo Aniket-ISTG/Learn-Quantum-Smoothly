@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/quantum/supabase";
-import { CircuitEditor } from "@/components/quantum/circuit/circuit-editor";
 import { StateVector } from "@/components/quantum/visualization/state-vector";
 import { ProbabilityDistribution } from "@/components/quantum/visualization/probability-distribution";
 import { getLesson } from "@/data/lessons";
