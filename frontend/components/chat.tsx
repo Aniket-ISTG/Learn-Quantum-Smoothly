@@ -16,6 +16,32 @@ type ChatMessage = {
 const AI_BACKEND_URL =
   process.env.NEXT_PUBLIC_AI_BACKEND_URL ?? "http://localhost:4000";
 
+function normalizeAIContent(content) {
+  if (!content) return "";
+
+  return content
+    // Convert ```math ... ``` into proper display math
+    .replace(/```math\s*([\s\S]*?)```/g, "\\[\n$1\n\\]")
+
+    // Convert ```latex ... ``` into proper display math
+    .replace(/```latex\s*([\s\S]*?)```/g, "\\[\n$1\n\\]")
+
+    // Convert common [ ... ] display-math mistakes
+    .replace(
+      /(?:^|\n)\[\s*(\\begin\{[\s\S]*?\\end\{[\s\S]*?\})\s*\](?=\n|$)/g,
+      "\n\\[\n$1\n\\]\n"
+    )
+
+    // Convert raw Unicode quantum notation
+    .replace(/\|0⟩/g, "\\(|0\\rangle\\)")
+    .replace(/\|1⟩/g, "\\(|1\\rangle\\)")
+    .replace(/\|ψ⟩/g, "\\(|\\psi\\rangle\\)")
+    .replace(/\|φ⟩/g, "\\(|\\phi\\rangle\\)")
+    .replace(/√2/g, "\\(\\sqrt{2}\\)")
+
+    .trim();
+}
+
 export default function Chat() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -23,6 +49,12 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
 
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const convertToString = (m : any) => {
+    console.log("AI RAW RESPONSE:", JSON.stringify(m.content));
+  }
+  for(let i = 0; i<messages.length; i++){
+    convertToString(messages[i])
+  }
 
   const pushUserMessage = (text: string) => {
     setMessages((m) => [...m, { role: "user", content: text }]);
@@ -162,6 +194,13 @@ export default function Chat() {
               parsed.choices?.[0]?.delta?.content;
 
             if (content) {
+              console.log(
+                "CONTENT:",
+                JSON.stringify(content),
+                "BACKSLASHES:",
+                (content.match(/\\/g) || []).length
+              );
+
               appendToLastAssistant(content);
             }
           } catch {
@@ -563,7 +602,8 @@ export default function Chat() {
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap break-words leading-6">
-                        {m.content}
+                        
+                        {normalizeAIContent(m.content)}
                       </p>
                     )}
                   </div>
