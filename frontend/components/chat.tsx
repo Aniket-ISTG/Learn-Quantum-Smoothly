@@ -1,6 +1,11 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -57,7 +62,7 @@ export default function Chat() {
   const handleSend = async () => {
     const text = input.trim();
 
-    if (!text) return;
+    if (!text || loading) return;
 
     const previousMessages = messages;
 
@@ -199,7 +204,7 @@ export default function Chat() {
       }
     } catch (err) {
       appendToLastAssistant(
-        "\n[Error contacting AI service]"
+        "\n\n**Error:** Unable to contact the AI service."
       );
     } finally {
       setLoading(false);
@@ -220,14 +225,16 @@ export default function Chat() {
   };
 
   return (
-    <div className="fixed right-4 top-16 w-80 max-h-[80vh] bg-slate-900 text-slate-100 rounded-lg shadow-lg flex flex-col overflow-hidden">
-      <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between">
+    <div className="fixed right-4 top-16 w-80 max-h-[80vh] bg-slate-900 text-slate-100 rounded-lg shadow-lg flex flex-col overflow-hidden border border-slate-700">
+
+      {/* HEADER */}
+      <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between shrink-0">
         <div className="text-sm font-medium">
           AI Tutor
         </div>
 
         <button
-          className="text-xs text-slate-400 hover:text-slate-200"
+          className="text-xs text-slate-400 hover:text-slate-200 transition"
           onClick={() => {
             setMessages([]);
           }}
@@ -236,33 +243,201 @@ export default function Chat() {
         </button>
       </div>
 
+      {/* MESSAGES */}
       <div
         ref={scrollRef}
-        className="flex-1 overflow-auto p-3 space-y-3 text-sm"
+        className="flex-1 overflow-y-auto overflow-x-hidden p-3 space-y-3 text-sm"
       >
         {messages.map((m, i) => (
           <div
             key={i}
             className={
               m.role === "user"
-                ? "text-right"
-                : "text-left"
+                ? "flex justify-end"
+                : "flex justify-start"
             }
           >
             <div
               className={
                 m.role === "user"
-                  ? "inline-block bg-slate-700 px-3 py-1 rounded-md"
-                  : "inline-block bg-slate-800 px-3 py-1 rounded-md"
+                  ? "max-w-[88%] bg-slate-700 px-3 py-2 rounded-lg text-left break-words"
+                  : "max-w-[92%] bg-slate-800 px-3 py-3 rounded-lg text-left break-words"
               }
             >
-              {m.content}
+
+              {m.role === "assistant" ? (
+                <div className="ai-markdown text-sm leading-6 text-slate-200">
+
+                  <ReactMarkdown
+                    remarkPlugins={[
+                      remarkGfm,
+                      remarkMath,
+                    ]}
+                    rehypePlugins={[
+                      rehypeKatex,
+                    ]}
+                    components={{
+
+                      /* PARAGRAPH */
+                      p: ({ children }) => (
+                        <p className="mb-3 last:mb-0 leading-6">
+                          {children}
+                        </p>
+                      ),
+
+                      /* HEADINGS */
+                      h1: ({ children }) => (
+                        <h1 className="text-lg font-bold text-white mt-1 mb-3">
+                          {children}
+                        </h1>
+                      ),
+
+                      h2: ({ children }) => (
+                        <h2 className="text-base font-bold text-white mt-4 mb-2">
+                          {children}
+                        </h2>
+                      ),
+
+                      h3: ({ children }) => (
+                        <h3 className="text-sm font-semibold text-cyan-300 mt-3 mb-2">
+                          {children}
+                        </h3>
+                      ),
+
+                      /* UNORDERED LIST */
+                      ul: ({ children }) => (
+                        <ul className="list-disc ml-5 mb-3 space-y-1.5">
+                          {children}
+                        </ul>
+                      ),
+
+                      /* ORDERED LIST */
+                      ol: ({ children }) => (
+                        <ol className="list-decimal ml-5 mb-3 space-y-1.5">
+                          {children}
+                        </ol>
+                      ),
+
+                      /* LIST ITEM */
+                      li: ({ children }) => (
+                        <li className="pl-1 leading-6">
+                          {children}
+                        </li>
+                      ),
+
+                      /* BOLD */
+                      strong: ({ children }) => (
+                        <strong className="font-semibold text-white">
+                          {children}
+                        </strong>
+                      ),
+
+                      /* ITALIC */
+                      em: ({ children }) => (
+                        <em className="italic text-slate-300">
+                          {children}
+                        </em>
+                      ),
+
+                      /* BLOCKQUOTE */
+                      blockquote: ({ children }) => (
+                        <blockquote className="border-l-2 border-cyan-400 pl-3 my-3 text-slate-300">
+                          {children}
+                        </blockquote>
+                      ),
+
+                      /* INLINE CODE */
+                      code: ({
+                        children,
+                        className,
+                      }) => {
+                        const isCodeBlock =
+                          className?.includes(
+                            "language-"
+                          );
+
+                        if (isCodeBlock) {
+                          return (
+                            <code className="text-cyan-300">
+                              {children}
+                            </code>
+                          );
+                        }
+
+                        return (
+                          <code className="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 text-xs">
+                            {children}
+                          </code>
+                        );
+                      },
+
+                      /* CODE BLOCK */
+                      pre: ({ children }) => (
+                        <pre className="bg-slate-950 border border-slate-700 rounded-lg p-3 my-3 overflow-x-auto text-xs leading-5">
+                          {children}
+                        </pre>
+                      ),
+
+                      /* LINKS */
+                      a: ({
+                        children,
+                        href,
+                      }) => (
+                        <a
+                          href={href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-cyan-400 hover:text-cyan-300 hover:underline"
+                        >
+                          {children}
+                        </a>
+                      ),
+
+                      /* HORIZONTAL RULE */
+                      hr: () => (
+                        <hr className="my-4 border-slate-700" />
+                      ),
+
+                      /* TABLE */
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-3">
+                          <table className="w-full border-collapse text-xs">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+
+                      th: ({ children }) => (
+                        <th className="border border-slate-700 bg-slate-900 px-2 py-1.5 text-left font-semibold text-white">
+                          {children}
+                        </th>
+                      ),
+
+                      td: ({ children }) => (
+                        <td className="border border-slate-700 px-2 py-1.5 text-slate-300">
+                          {children}
+                        </td>
+                      ),
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
+
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap break-words leading-6">
+                  {m.content}
+                </p>
+              )}
+
             </div>
           </div>
         ))}
       </div>
 
-      <div className="p-2 border-t border-slate-700">
+      {/* INPUT */}
+      <div className="p-2 border-t border-slate-700 shrink-0">
+
         <textarea
           value={input}
           onChange={(e) => {
@@ -274,29 +449,32 @@ export default function Chat() {
               ? "Waiting for response…"
               : "Ask a question"
           }
-          className="w-full resize-none h-20 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-md p-2 border border-slate-700"
+          className="w-full resize-none h-20 bg-slate-900 text-slate-100 placeholder-slate-500 rounded-md p-2 border border-slate-700 outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition"
           disabled={loading}
         />
 
         <div className="mt-2 flex items-center justify-end gap-2">
+
           <button
             onClick={() => {
               setInput("");
             }}
-            className="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600"
+            className="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600 transition"
           >
             Reset
           </button>
 
           <button
             onClick={handleSend}
-            disabled={loading}
-            className="text-xs px-3 py-1 rounded bg-emerald-500 text-black hover:brightness-95 disabled:opacity-50"
+            disabled={loading || !input.trim()}
+            className="text-xs px-3 py-1 rounded bg-emerald-500 text-black hover:brightness-95 disabled:opacity-50 transition"
           >
             {loading ? "Thinking…" : "Send"}
           </button>
+
         </div>
       </div>
+
     </div>
   );
 }
