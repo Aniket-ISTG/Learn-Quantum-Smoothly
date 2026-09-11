@@ -713,18 +713,21 @@ export default function Chat() {
           h-14
           w-14
           rounded-full
-          bg-cyan-400
-          text-slate-950
+          bg-gradient-to-br
+          from-cyan-400
+          to-violet-500
+          text-white
           text-2xl
           font-bold
           flex
           items-center
           justify-center
-          shadow-[0_0_30px_rgba(34,211,238,0.35)]
+          shadow-[0_4px_20px_rgba(6,182,212,0.35)]
           transition-all
           duration-200
           hover:scale-105
-          hover:bg-cyan-300
+          hover:from-cyan-300
+          hover:to-violet-400
           active:scale-95
         "
       >

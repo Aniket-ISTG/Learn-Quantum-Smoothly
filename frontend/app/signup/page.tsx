@@ -13,58 +13,51 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
 
   const handleSignup = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (password !== confirmPassword) {
-    alert("Passwords do not match.");
-    return;
-  }
+    if (password !== confirmPassword) {
+      alert("Passwords do not match.");
+      return;
+    }
 
-  const { error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: {
-        name: name,
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          name: name,
+        },
       },
-    },
-  });
+    });
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
+    if (error) {
+      alert(error.message);
+      return;
+    }
 
-  alert("Account created successfully!");
-
-  router.push("/login");
-};
+    alert("Account created successfully!");
+    router.push("/login");
+  };
 
   return (
-    <main className="min-h-screen bg-[#050d18] text-white relative overflow-hidden">
-      {/* Background glow */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-[-200px] left-1/2 -translate-x-1/2 w-[700px] h-[500px] bg-cyan-400/10 blur-[140px] rounded-full" />
-      </div>
-
+    <main className="lab-grid aurora min-h-screen bg-[#f8fbff] text-slate-900 relative overflow-hidden">
       {/* Header */}
-      <header className="relative z-10 h-16 border-b border-white/10 flex items-center justify-between px-6 md:px-16">
+      <header className="relative z-10 h-16 border-b border-cyan-100 bg-white/80 backdrop-blur-md flex items-center justify-between px-6 md:px-16">
         <button
           onClick={() => router.push("/")}
-          className="flex items-center gap-3"
+          className="flex items-center gap-2 font-bold text-slate-900"
         >
-          <div className="w-8 h-8 rounded-lg bg-cyan-400 flex items-center justify-center text-black font-bold">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 flex items-center justify-center text-white font-bold">
             ◈
           </div>
-
-          <span className="font-semibold text-lg">
-            qubit <span className="text-cyan-400">lab</span>
+          <span>
+            qubit<span className="gradient-text">lab</span>
           </span>
         </button>
 
         <button
           onClick={() => router.push("/")}
-          className="text-sm text-slate-400 hover:text-white transition"
+          className="text-sm font-medium text-slate-600 hover:text-cyan-600 transition"
         >
           Back to home →
         </button>
@@ -73,32 +66,30 @@ export default function SignupPage() {
       {/* Signup section */}
       <section className="relative z-10 min-h-[calc(100vh-64px)] flex items-center justify-center px-4 py-10">
         <div className="w-full max-w-md">
-
           {/* Heading */}
           <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-400/20 bg-cyan-400/5 text-cyan-300 text-xs mb-5">
-              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-cyan-200/80 bg-cyan-50 text-cyan-700 text-xs font-semibold mb-4">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-500 animate-pulse" />
               Quantum learning laboratory
             </div>
 
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-3">
+            <h1 className="text-4xl font-bold tracking-tight text-slate-900 mb-2">
               Start learning.
             </h1>
 
-            <p className="text-slate-400">
-              Create your account and enter the quantum lab.
+            <p className="text-sm text-slate-600">
+              Create your account and enter Qubit Lab.
             </p>
           </div>
 
           {/* Signup card */}
-          <div className="border border-slate-700/60 bg-[#091523]/80 backdrop-blur-xl rounded-2xl p-7 md:p-8 shadow-2xl">
-            <form onSubmit={handleSignup} className="space-y-5">
-
+          <div className="panel rounded-3xl p-7 md:p-8 bg-white shadow-[0_8px_32px_rgba(6,182,212,0.08)] border border-cyan-100">
+            <form onSubmit={handleSignup} className="space-y-4">
               {/* Name */}
               <div>
                 <label
                   htmlFor="name"
-                  className="block text-sm text-slate-300 mb-2"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
                 >
                   Name
                 </label>
@@ -110,7 +101,7 @@ export default function SignupPage() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Your name"
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-[#07111e] px-4 py-3 text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-200"
                 />
               </div>
 
@@ -118,7 +109,7 @@ export default function SignupPage() {
               <div>
                 <label
                   htmlFor="email"
-                  className="block text-sm text-slate-300 mb-2"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
                 >
                   Email
                 </label>
@@ -130,7 +121,7 @@ export default function SignupPage() {
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-[#07111e] px-4 py-3 text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-200"
                 />
               </div>
 
@@ -138,7 +129,7 @@ export default function SignupPage() {
               <div>
                 <label
                   htmlFor="password"
-                  className="block text-sm text-slate-300 mb-2"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
                 >
                   Password
                 </label>
@@ -151,7 +142,7 @@ export default function SignupPage() {
                   placeholder="••••••••"
                   minLength={6}
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-[#07111e] px-4 py-3 text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-200"
                 />
               </div>
 
@@ -159,7 +150,7 @@ export default function SignupPage() {
               <div>
                 <label
                   htmlFor="confirmPassword"
-                  className="block text-sm text-slate-300 mb-2"
+                  className="block text-xs font-semibold uppercase tracking-wider text-slate-700 mb-1.5"
                 >
                   Confirm password
                 </label>
@@ -172,48 +163,48 @@ export default function SignupPage() {
                   placeholder="••••••••"
                   minLength={6}
                   required
-                  className="w-full rounded-lg border border-slate-700 bg-[#07111e] px-4 py-3 text-white placeholder:text-slate-600 outline-none transition focus:border-cyan-400/60 focus:ring-1 focus:ring-cyan-400/30"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50/50 px-4 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-cyan-500 focus:bg-white focus:ring-2 focus:ring-cyan-200"
                 />
               </div>
 
               {/* Signup button */}
               <button
                 type="submit"
-                className="w-full rounded-lg bg-cyan-400 hover:bg-cyan-300 text-black font-semibold py-3 transition"
+                className="btn-primary w-full justify-center !py-3 !text-sm mt-2"
               >
                 Create account →
               </button>
             </form>
 
             {/* Divider */}
-            <div className="flex items-center gap-3 my-6">
-              <div className="h-px bg-slate-700/70 flex-1" />
-              <span className="text-xs text-slate-500">OR</span>
-              <div className="h-px bg-slate-700/70 flex-1" />
+            <div className="flex items-center gap-3 my-5">
+              <div className="h-px bg-cyan-100 flex-1" />
+              <span className="text-[11px] font-bold text-slate-400">OR</span>
+              <div className="h-px bg-cyan-100 flex-1" />
             </div>
 
             {/* Google button */}
             <button
               type="button"
-              className="w-full rounded-lg border border-slate-700 hover:border-slate-500 bg-transparent py-3 text-sm font-medium text-slate-200 transition"
+              className="btn-secondary w-full justify-center !py-2.5 !text-sm"
             >
               Continue with Google
             </button>
 
             {/* Login */}
-            <p className="text-center text-sm text-slate-400 mt-6">
+            <p className="text-center text-xs text-slate-600 mt-5">
               Already have an account?{" "}
               <button
                 type="button"
                 onClick={() => router.push("/login")}
-                className="text-cyan-400 hover:text-cyan-300 font-medium transition"
+                className="text-cyan-600 font-bold hover:underline"
               >
                 Login
               </button>
             </p>
           </div>
 
-          <p className="text-center text-xs text-slate-600 mt-6">
+          <p className="text-center text-xs text-slate-400 mt-6">
             Learn Quantum Smoothly · Qubit Lab
           </p>
         </div>
