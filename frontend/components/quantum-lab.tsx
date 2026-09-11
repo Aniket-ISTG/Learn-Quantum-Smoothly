@@ -7,7 +7,6 @@ import { supabase } from "@/lib/quantum/supabase";
 import { CircuitEditor } from "@/components/quantum/circuit/circuit-editor";
 import { StateVector } from "@/components/quantum/visualization/state-vector";
 import { ProbabilityDistribution } from "@/components/quantum/visualization/probability-distribution";
-import { qubitStateFromPolarAngle } from "@/lib/quantum/simulator";
 import { getLesson } from "@/data/lessons";
 import { MathFoundations } from "@/components/math/math-foundations";
 import { MathLesson } from "@/components/math/math-lesson";

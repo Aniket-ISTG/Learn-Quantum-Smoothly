@@ -39,7 +39,6 @@ async function proxy(request: NextRequest) {
   const protectedRoutes = [
     "/learn",
     "/playground",
-    "/simulator",
   ];
 
   const isProtectedRoute = protectedRoutes.some((route) =>
@@ -61,7 +60,6 @@ export const config = {
   matcher: [
     "/learn/:path*",
     "/playground/:path*",
-    "/simulator/:path*",
   ],
 };
 
