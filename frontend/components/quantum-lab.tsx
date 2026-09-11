@@ -9,6 +9,8 @@ import { StateVector } from "@/components/quantum/visualization/state-vector";
 import { ProbabilityDistribution } from "@/components/quantum/visualization/probability-distribution";
 import { qubitStateFromPolarAngle } from "@/lib/quantum/simulator";
 import { getLesson } from "@/data/lessons";
+import { MathFoundations } from "@/components/math/math-foundations";
+import { MathLesson } from "@/components/math/math-lesson";
 
 type View =
   | "home"
@@ -248,10 +250,12 @@ export function QuantumLab({
 
       {view === "home" && <Home />}
       {view === "roadmap" && <Roadmap />}
-      {view === "category" && <CategoryPage category={category} />}
-      {view === "lesson" && (
+      {view === "category" && (category === "math" ? <MathFoundations /> : <CategoryPage category={category} />)}
+      {view === "lesson" && (category === "math" ? (
+        <MathLesson lessonSlug={lesson} />
+      ) : (
         <LessonPage category={category} lesson={lesson} />
-      )}
+      ))}
       {(view === "playground" || view === "simulator") && (
         <Workbench simulator={view === "simulator"} />
       )}
