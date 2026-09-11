@@ -43,7 +43,7 @@ export function PlatformHeader() {
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-cyan-400 to-blue-500 text-lg text-white shadow-sm">
             ◈
           </span>
-          qubit<span className="gradient-text">lab</span>
+          <span className="gradient-text">QMENTOR</span>
         </Link>
 
         <nav className="hidden items-center gap-6 text-sm text-slate-600 md:flex">
