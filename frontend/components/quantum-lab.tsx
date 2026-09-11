@@ -188,10 +188,6 @@ function Header() {
           <Link href="/playground" className="hover:text-cyan-300">
             Playground
           </Link>
-
-          <Link href="/simulator" className="hover:text-cyan-300">
-            Simulator
-          </Link>
         </nav>
 
         <div className="flex items-center gap-3">
