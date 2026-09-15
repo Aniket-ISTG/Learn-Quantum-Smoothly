@@ -12,13 +12,16 @@ export default function PlaygroundPage() {
             <p className="text-xs font-bold uppercase tracking-[.2em] text-cyan-600">
               Advanced laboratory
             </p>
+
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
               Quantum Circuit Playground
             </h1>
+
             <p className="mt-2 text-sm text-slate-600">
               Build and experiment with quantum circuits.
             </p>
           </div>
+
           <Link href="/" className="btn-secondary !text-xs">
             ← Back to home
           </Link>

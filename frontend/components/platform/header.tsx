@@ -10,10 +10,11 @@ const navLinks = [
   { href: "/playground", label: "Playground" },
   { href: "/#simulator", label: "Simulator" },
   { href: "/#progress", label: "Progress" },
+  { href: "/ide", label: "IDE" },
 ];
 
 export function PlatformHeader({
-  theme = "light",
+  theme = "light",  
   onThemeChange = () => {},
 }: {
   theme?: "light" | "dark";

@@ -1,6 +1,16 @@
 const fs = require("fs");
+const fsPromises = require("fs/promises");
 const path = require("path");
+const os = require("os");
 const http = require("http");
+const { execFile } = require("child_process");
+const { promisify } = require("util");
+
+const execFileAsync = promisify(execFile);
+
+// ========================================
+// Load environment variables
+// ========================================
 
 const envPath = path.join(__dirname, ".env.local");
 
@@ -27,6 +37,10 @@ if (fs.existsSync(envPath)) {
   }
 }
 
+// ========================================
+// Import AI modules
+// ========================================
+
 const {
   generalTutorPrompt,
   circuitAnalysisPrompt,
@@ -49,9 +63,16 @@ const {
   parseLearningPath,
 } = require("./ai/validation.js");
 
-const PORT = Number(process.env.PORT || 4000);
+// ========================================
+// Server configuration
+// ========================================
 
+const PORT = Number(process.env.PORT || 4000);
 const FRONTEND_ORIGIN = "http://localhost:3000";
+
+// ========================================
+// CORS
+// ========================================
 
 function setCorsHeaders(res) {
   res.setHeader(
@@ -70,11 +91,19 @@ function setCorsHeaders(res) {
   );
 }
 
+// ========================================
+// Response helpers
+// ========================================
+
 function sendJson(res, statusCode, payload) {
+  if (res.headersSent) {
+    return;
+  }
+
   setCorsHeaders(res);
 
   res.writeHead(statusCode, {
-    "Content-Type": "application/json",
+    "Content-Type": "application/json; charset=utf-8",
   });
 
   res.end(JSON.stringify(payload));
@@ -110,23 +139,60 @@ function sendStream(res, readableStream) {
       await pump();
     } catch (error) {
       console.error("AI stream error:", error);
-      res.end();
+
+      if (!res.writableEnded) {
+        res.end();
+      }
     }
   }
 
   pump();
 }
 
-async function handleChat(req, res) {
+// ========================================
+// Read request body
+// ========================================
+
+async function readRequestBody(req) {
   let body = "";
 
   for await (const chunk of req) {
-    body += chunk;
-  }
-  
-  console.log("print statement 1")
+    body += chunk.toString();
 
-  const payload = JSON.parse(body || "{}");
+    if (body.length > 1024 * 1024) {
+      throw new Error("Request body is too large.");
+    }
+  }
+
+  return body;
+}
+
+// ========================================
+// AI Chat Handler
+// ========================================
+
+async function handleChat(req, res) {
+  let body;
+
+  try {
+    body = await readRequestBody(req);
+  } catch {
+    return sendJson(res, 400, {
+      error: "Unable to read request body.",
+    });
+  }
+
+  let payload;
+
+  try {
+    payload = JSON.parse(body || "{}");
+  } catch {
+    return sendJson(res, 400, {
+      error: "Invalid JSON request.",
+    });
+  }
+
+  console.log("Chat request received");
 
   if (
     !payload.context ||
@@ -138,18 +204,15 @@ async function handleChat(req, res) {
     });
   }
 
-  console.log("print statement 2")
-
   const messages = [
-    ...(payload.messages ?? []),
+    ...(Array.isArray(payload.messages)
+      ? payload.messages
+      : []),
     {
       role: "user",
       content: payload.message.slice(0, 4000),
     },
   ].slice(-12);
-
-
-  console.log("print statement 3")
 
   try {
     const upstream = await streamGrokText(
@@ -163,7 +226,7 @@ async function handleChat(req, res) {
     console.error(error);
     console.error("================================");
 
-    sendJson(res, 500, {
+    return sendJson(res, 500, {
       error:
         error instanceof Error
           ? error.message
@@ -171,18 +234,32 @@ async function handleChat(req, res) {
       retryable: true,
     });
   }
-
-  console.log("print statement 3")
 }
 
-async function handleAnalyze(req, res) {
-  let body = "";
+// ========================================
+// Circuit Analysis Handler
+// ========================================
 
-  for await (const chunk of req) {
-    body += chunk;
+async function handleAnalyze(req, res) {
+  let body;
+
+  try {
+    body = await readRequestBody(req);
+  } catch {
+    return sendJson(res, 400, {
+      error: "Unable to read request body.",
+    });
   }
 
-  const payload = JSON.parse(body || "{}");
+  let payload;
+
+  try {
+    payload = JSON.parse(body || "{}");
+  } catch {
+    return sendJson(res, 400, {
+      error: "Invalid JSON request.",
+    });
+  }
 
   if (!payload.context || !payload.circuit) {
     return sendJson(res, 400, {
@@ -216,6 +293,8 @@ async function handleAnalyze(req, res) {
 
     return sendJson(res, 200, parsed);
   } catch (error) {
+    console.error("Circuit analysis error:", error);
+
     return sendJson(res, 500, {
       error:
         error instanceof Error
@@ -226,14 +305,30 @@ async function handleAnalyze(req, res) {
   }
 }
 
-async function handleOptimize(req, res) {
-  let body = "";
+// ========================================
+// Circuit Optimization Handler
+// ========================================
 
-  for await (const chunk of req) {
-    body += chunk;
+async function handleOptimize(req, res) {
+  let body;
+
+  try {
+    body = await readRequestBody(req);
+  } catch {
+    return sendJson(res, 400, {
+      error: "Unable to read request body.",
+    });
   }
 
-  const payload = JSON.parse(body || "{}");
+  let payload;
+
+  try {
+    payload = JSON.parse(body || "{}");
+  } catch {
+    return sendJson(res, 400, {
+      error: "Invalid JSON request.",
+    });
+  }
 
   if (!payload.context || !payload.circuit) {
     return sendJson(res, 400, {
@@ -256,6 +351,8 @@ async function handleOptimize(req, res) {
       parseOptimization(result)
     );
   } catch (error) {
+    console.error("Circuit optimization error:", error);
+
     return sendJson(res, 500, {
       error:
         error instanceof Error
@@ -266,14 +363,30 @@ async function handleOptimize(req, res) {
   }
 }
 
-async function handleLearningPath(req, res) {
-  let body = "";
+// ========================================
+// Learning Path Handler
+// ========================================
 
-  for await (const chunk of req) {
-    body += chunk;
+async function handleLearningPath(req, res) {
+  let body;
+
+  try {
+    body = await readRequestBody(req);
+  } catch {
+    return sendJson(res, 400, {
+      error: "Unable to read request body.",
+    });
   }
 
-  const payload = JSON.parse(body || "{}");
+  let payload;
+
+  try {
+    payload = JSON.parse(body || "{}");
+  } catch {
+    return sendJson(res, 400, {
+      error: "Invalid JSON request.",
+    });
+  }
 
   if (!payload.context) {
     return sendJson(res, 400, {
@@ -296,6 +409,8 @@ async function handleLearningPath(req, res) {
       parseLearningPath(result)
     );
   } catch (error) {
+    console.error("Learning path error:", error);
+
     return sendJson(res, 500, {
       error:
         error instanceof Error
@@ -306,64 +421,377 @@ async function handleLearningPath(req, res) {
   }
 }
 
+// ========================================
+// Code Execution Handler
+// Supports:
+// C
+// C++
+// Python
+// Java
+// JavaScript
+// ========================================
+
+async function handleRunCode(req, res) {
+  let body;
+
+  try {
+    body = await readRequestBody(req);
+  } catch {
+    return sendJson(res, 400, {
+      error: "Unable to read request body.",
+    });
+  }
+
+  let payload;
+
+  try {
+    payload = JSON.parse(body || "{}");
+  } catch {
+    return sendJson(res, 400, {
+      error: "Invalid JSON request.",
+    });
+  }
+
+  const { language, code } = payload;
+
+  const supportedLanguages = [
+    "c",
+    "cpp",
+    "python",
+    "java",
+    "javascript",
+  ];
+
+  if (!supportedLanguages.includes(language)) {
+    return sendJson(res, 400, {
+      error: "Unsupported language.",
+    });
+  }
+
+  if (typeof code !== "string" || !code.trim()) {
+    return sendJson(res, 400, {
+      error: "Code is required.",
+    });
+  }
+
+  const temporaryDirectory = await fsPromises.mkdtemp(
+    path.join(os.tmpdir(), "qubit-lab-")
+  );
+
+  let sourceFile;
+  let compileCommand = null;
+  let compileArguments = [];
+  let runCommand;
+  let runArguments = [];
+
+  try {
+    // ========================================
+    // C
+    // ========================================
+
+    if (language === "c") {
+      sourceFile = path.join(
+        temporaryDirectory,
+        "main.c"
+      );
+
+      await fsPromises.writeFile(
+        sourceFile,
+        code,
+        "utf8"
+      );
+
+      const executableName =
+        process.platform === "win32"
+          ? "main.exe"
+          : "main";
+
+      compileCommand = "gcc";
+
+      compileArguments = [
+        sourceFile,
+        "-o",
+        path.join(temporaryDirectory, executableName),
+      ];
+
+      runCommand = path.join(
+        temporaryDirectory,
+        executableName
+      );
+    }
+
+    // ========================================
+    // C++
+    // ========================================
+
+    if (language === "cpp") {
+      sourceFile = path.join(
+        temporaryDirectory,
+        "main.cpp"
+      );
+
+      await fsPromises.writeFile(
+        sourceFile,
+        code,
+        "utf8"
+      );
+
+      const executableName =
+        process.platform === "win32"
+          ? "main.exe"
+          : "main";
+
+      compileCommand = "g++";
+
+      compileArguments = [
+        sourceFile,
+        "-o",
+        path.join(temporaryDirectory, executableName),
+      ];
+
+      runCommand = path.join(
+        temporaryDirectory,
+        executableName
+      );
+    }
+
+    // ========================================
+    // Python
+    // ========================================
+
+    if (language === "python") {
+      sourceFile = path.join(
+        temporaryDirectory,
+        "main.py"
+      );
+
+      await fsPromises.writeFile(
+        sourceFile,
+        code,
+        "utf8"
+      );
+
+      runCommand =
+        process.platform === "win32"
+          ? "python"
+          : "python3";
+
+      runArguments = [sourceFile];
+    }
+
+    // ========================================
+    // Java
+    // ========================================
+
+    if (language === "java") {
+      sourceFile = path.join(
+        temporaryDirectory,
+        "Main.java"
+      );
+
+      await fsPromises.writeFile(
+        sourceFile,
+        code,
+        "utf8"
+      );
+
+      compileCommand = "javac";
+      compileArguments = [sourceFile];
+
+      runCommand = "java";
+      runArguments = [
+        "-cp",
+        temporaryDirectory,
+        "Main",
+      ];
+    }
+
+    // ========================================
+    // JavaScript
+    // ========================================
+
+    if (language === "javascript") {
+      sourceFile = path.join(
+        temporaryDirectory,
+        "main.js"
+      );
+
+      await fsPromises.writeFile(
+        sourceFile,
+        code,
+        "utf8"
+      );
+
+      runCommand = process.execPath;
+      runArguments = [sourceFile];
+    }
+
+    // ========================================
+    // Compile C, C++, or Java
+    // ========================================
+
+    if (compileCommand) {
+      try {
+        await execFileAsync(
+          compileCommand,
+          compileArguments,
+          {
+            cwd: temporaryDirectory,
+            timeout: 10000,
+            maxBuffer: 1024 * 1024,
+            windowsHide: true,
+          }
+        );
+      } catch (error) {
+        return sendJson(res, 400, {
+          output: "",
+          error:
+            error.stderr ||
+            error.stdout ||
+            error.message ||
+            "Compilation failed.",
+        });
+      }
+    }
+
+    // ========================================
+    // Run the code
+    // ========================================
+
+    try {
+      const result = await execFileAsync(
+        runCommand,
+        runArguments,
+        {
+          cwd: temporaryDirectory,
+          timeout: 5000,
+          maxBuffer: 1024 * 1024,
+          windowsHide: true,
+        }
+      );
+
+      return sendJson(res, 200, {
+        output: result.stdout || "",
+        error: result.stderr || "",
+      });
+    } catch (error) {
+      return sendJson(res, 400, {
+        output: error.stdout || "",
+        error:
+          error.stderr ||
+          error.message ||
+          "Execution failed.",
+      });
+    }
+  } finally {
+    await fsPromises.rm(temporaryDirectory, {
+      recursive: true,
+      force: true,
+    });
+  }
+}
+
+// ========================================
+// HTTP Server
+// ========================================
+
 const server = http.createServer(
   async (req, res) => {
     try {
       setCorsHeaders(res);
 
+      // Handle CORS preflight request
       if (req.method === "OPTIONS") {
         res.writeHead(204);
         return res.end();
       }
 
-      if (req.method !== "POST") {
-        return sendJson(res, 405, {
-          error: "Method not allowed.",
-        });
-      }
-
       const url = new URL(
         req.url,
-        `http://${req.headers.host}`
+        `http://${req.headers.host || "localhost"}`
       );
 
-      if (url.pathname === "/api/ai/chat") {
+      // ========================================
+      // Code execution endpoint
+      // ========================================
+
+      if (
+        url.pathname === "/api/run" &&
+        req.method === "POST"
+      ) {
+        return await handleRunCode(req, res);
+      }
+
+      // ========================================
+      // AI chat endpoint
+      // ========================================
+
+      if (
+        url.pathname === "/api/ai/chat" &&
+        req.method === "POST"
+      ) {
         return await handleChat(req, res);
       }
 
+      // ========================================
+      // Circuit analysis endpoint
+      // ========================================
+
       if (
-        url.pathname ===
-        "/api/ai/analyze-circuit"
+        url.pathname === "/api/ai/analyze-circuit" &&
+        req.method === "POST"
       ) {
         return await handleAnalyze(req, res);
       }
 
+      // ========================================
+      // Circuit optimization endpoint
+      // ========================================
+
       if (
-        url.pathname ===
-        "/api/ai/optimize-circuit"
+        url.pathname === "/api/ai/optimize-circuit" &&
+        req.method === "POST"
       ) {
         return await handleOptimize(req, res);
       }
 
+      // ========================================
+      // Learning path endpoint
+      // ========================================
+
       if (
-        url.pathname ===
-        "/api/ai/learning-path"
+        url.pathname === "/api/ai/learning-path" &&
+        req.method === "POST"
       ) {
         return await handleLearningPath(req, res);
       }
+
+      // ========================================
+      // Unknown route
+      // ========================================
 
       return sendJson(res, 404, {
         error: "Not found.",
       });
     } catch (error) {
-      console.error(error);
+      console.error("Server error:", error);
 
-      return sendJson(res, 500, {
-        error: "Internal server error.",
-      });
+      if (!res.headersSent) {
+        return sendJson(res, 500, {
+          error: "Internal server error.",
+        });
+      }
+
+      if (!res.writableEnded) {
+        res.end();
+      }
     }
   }
 );
+
+// ========================================
+// Start server
+// ========================================
 
 server.listen(PORT, () => {
   console.log(
