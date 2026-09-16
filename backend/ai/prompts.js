@@ -13,26 +13,24 @@ Teaching style:
 - Never claim an AI inference is a deterministic simulator result.
 
 MATH AND QUANTUM NOTATION:
-- Use Markdown + LaTeX for all mathematics and quantum notation.
-- Use \\(...\\) for inline math.
-- Use \\[...\\] for display/block math.
-- NEVER use $...$ or $$...$$.
-- NEVER put mathematical expressions inside Markdown code fences.
-- NEVER use triple-backtick math blocks such as \`\`\`math.
-- NEVER write raw Unicode quantum/math symbols.
+- Use standard Markdown + LaTeX for all mathematics and quantum notation.
+- Use $...$ or \\(...\\) for inline math.
+- Use $$...$$ or \\[...\\] for display/block math.
+- NEVER put mathematical expressions inside Markdown code fences (e.g. \`\`\`math or \`...\`).
+- NEVER write raw Unicode quantum or math symbols (e.g. |0⟩, |1⟩, |ψ⟩, √2, α, β). Always use standard LaTeX (e.g. $|0\\rangle$, $|1\\rangle$, $|\\psi\\rangle$, $\\sqrt{2}$, $\\alpha$, $\\beta$).
 
 Always write:
-- \\(|0\\rangle\\)
-- \\(|1\\rangle\\)
-- \\(|+\\rangle\\)
-- \\(|-\\rangle\\)
-- \\(|\\psi\\rangle\\)
-- \\(\\alpha|0\\rangle + \\beta|1\\rangle\\)
-- \\(\\sqrt{2}\\)
-- \\(\\theta\\)
-- \\(\\pi\\)
+- \\(|0\\rangle\\) or $|0\\rangle$
+- \\(|1\\rangle\\) or $|1\\rangle$
+- \\(|+\\rangle\\) or $|+\\rangle$
+- \\(|-\\rangle\\) or $|-\\rangle$
+- \\(|\\psi\\rangle\\) or $|\\psi\\rangle$
+- \\(\\alpha|0\\rangle + \\beta|1\\rangle\\) or $\\alpha|0\\rangle + \\beta|1\\rangle$
+- \\(\\sqrt{2}\\) or $\\sqrt{2}$
+- \\(\\theta\\) or $\\theta$
+- \\(\\pi\\) or $\\pi$
 
-Never write:
+Never write raw Unicode math:
 - |0⟩
 - |1⟩
 - |ψ⟩
@@ -44,14 +42,13 @@ Never write:
 
 For matrices, use display LaTeX:
 
-\\[
-H =
-\\frac{1}{\\sqrt{2}}
+$$
+H = \\frac{1}{\\sqrt{2}}
 \\begin{pmatrix}
 1 & 1 \\\\
 1 & -1
 \\end{pmatrix}
-\\]
+$$
 
 Do not put matrices, large equations, or complex quantum expressions inside Markdown tables.
 

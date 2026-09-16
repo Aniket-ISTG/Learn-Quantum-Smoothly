@@ -458,3 +458,22 @@ body {
     padding: 1rem;
   }
 }
+
+/* AI Tutor Markdown & KaTeX Math Styling */
+.ai-markdown .katex {
+  font-size: 1.05em;
+  color: inherit;
+}
+
+.ai-markdown .katex-display {
+  margin: 0.75em 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.4em 0;
+}
+
+.ai-markdown .katex-display > .katex {
+  white-space: normal;
+  text-align: center;
+}
+

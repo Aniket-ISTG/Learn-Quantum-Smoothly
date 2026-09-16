@@ -16,30 +16,53 @@ type ChatMessage = {
 const AI_BACKEND_URL =
   process.env.NEXT_PUBLIC_AI_BACKEND_URL ?? "http://localhost:4000";
 
-function normalizeAIContent(content : any) {
-  if (!content) return "";
+function normalizeAIContent(content: unknown): string {
+  if (typeof content !== "string" || !content) return "";
 
-  return content
-    // Convert ```math ... ``` into proper display math
-    .replace(/```math\s*([\s\S]*?)```/g, "\\[\n$1\n\\]")
+  let normalized = content;
 
-    // Convert ```latex ... ``` into proper display math
-    .replace(/```latex\s*([\s\S]*?)```/g, "\\[\n$1\n\\]")
+  // Convert ```math ... ``` and ```latex ... ``` code blocks into block math $$ ... $$
+  normalized = normalized.replace(
+    /```(?:math|latex)\s*([\s\S]*?)```/gi,
+    (_match, code) => `\n$$\n${code.trim()}\n$$\n`
+  );
 
-    // Convert common [ ... ] display-math mistakes
-    .replace(
-      /(?:^|\n)\[\s*(\\begin\{[\s\S]*?\\end\{[\s\S]*?\})\s*\](?=\n|$)/g,
-      "\n\\[\n$1\n\\]\n"
-    )
+  // Convert display math delimiters \[ ... \] into $$ ... $$
+  normalized = normalized.replace(
+    /\\\[\s*([\s\S]*?)\s*\\\]/g,
+    (_match, math) => `\n$$\n${math.trim()}\n$$\n`
+  );
 
-    // Convert raw Unicode quantum notation
-    .replace(/\|0⟩/g, "\\(|0\\rangle\\)")
-    .replace(/\|1⟩/g, "\\(|1\\rangle\\)")
-    .replace(/\|ψ⟩/g, "\\(|\\psi\\rangle\\)")
-    .replace(/\|φ⟩/g, "\\(|\\phi\\rangle\\)")
-    .replace(/√2/g, "\\(\\sqrt{2}\\)")
+  // Convert inline math delimiters \( ... \) into $ ... $
+  normalized = normalized.replace(
+    /\\\(\s*([\s\S]*?)\s*\\\)/g,
+    (_match, math) => ` $${math.trim()}$ `
+  );
 
-    .trim();
+  // Wrap un-delimited \begin{env} ... \end{env} blocks in $$ ... $$
+  normalized = normalized.replace(
+    /(?<!\$\$|\$)\s*(\\begin\{(?:pmatrix|bmatrix|vmatrix|Vmatrix|matrix|align|equation|cases|array)\}[\s\S]*?\\end\{(?:pmatrix|bmatrix|vmatrix|Vmatrix|matrix|align|equation|cases|array)\})\s*(?!\$\$|\$)/g,
+    (_match, block) => `\n$$\n${block.trim()}\n$$\n`
+  );
+
+  // Convert raw unicode quantum symbols to proper LaTeX math
+  normalized = normalized
+    .replace(/\|0⟩/g, "$|0\\rangle$")
+    .replace(/\|1⟩/g, "$|1\\rangle$")
+    .replace(/\|\+⟩/g, "$|+\\rangle$")
+    .replace(/\|-⟩/g, "$|-\\rangle$")
+    .replace(/\|ψ⟩/g, "$|\\psi\\rangle$")
+    .replace(/\|φ⟩/g, "$|\\phi\\rangle$")
+    .replace(/√2/g, "$\\sqrt{2}$");
+
+  // Handle unclosed delimiters during live SSE streaming
+  if (/\\\[(?![^]*?\\\])/.test(normalized)) {
+    normalized = normalized.replace(/\\\[([\s\S]*)$/, (_match, math) => `\n$$\n${math.trim()}\n$$\n`);
+  } else if (/\\\((?![^]*?\\\))/.test(normalized)) {
+    normalized = normalized.replace(/\\\(([\s\S]*)$/, (_match, math) => ` $${math.trim()}$ `);
+  }
+
+  return normalized.trim();
 }
 
 export default function Chat() {
@@ -47,14 +70,9 @@ export default function Chat() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
   const scrollRef = useRef<HTMLDivElement | null>(null);
-  const convertToString = (m : any) => {
-    console.log("AI RAW RESPONSE:", JSON.stringify(m.content));
-  }
-  for(let i = 0; i<messages.length; i++){
-    convertToString(messages[i])
-  }
+
+
 
   const pushUserMessage = (text: string) => {
     setMessages((m) => [...m, { role: "user", content: text }]);
@@ -194,13 +212,6 @@ export default function Chat() {
               parsed.choices?.[0]?.delta?.content;
 
             if (content) {
-              console.log(
-                "CONTENT:",
-                JSON.stringify(content),
-                "BACKSLASHES:",
-                (content.match(/\\/g) || []).length
-              );
-
               appendToLastAssistant(content);
             }
           } catch {
@@ -457,9 +468,9 @@ export default function Chat() {
                           components={{
                             /* PARAGRAPH */
                             p: ({ children }) => (
-                              <p className="mb-3 last:mb-0 leading-6">
+                              <div className="mb-3 last:mb-0 leading-6">
                                 {children}
-                              </p>
+                              </div>
                             ),
 
                             /* HEADINGS */
@@ -597,13 +608,12 @@ export default function Chat() {
                             ),
                           }}
                         >
-                          {m.content}
+                          {normalizeAIContent(m.content)}
                         </ReactMarkdown>
                       </div>
                     ) : (
                       <p className="whitespace-pre-wrap break-words leading-6">
-                        
-                        {normalizeAIContent(m.content)}
+                        {m.content}
                       </p>
                     )}
                   </div>
