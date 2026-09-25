@@ -205,6 +205,7 @@ async function handleChat(req, res) {
     ...(Array.isArray(payload.messages)
       ? payload.messages
       : []),
+
     {
       role: "user",
       content: payload.message.slice(0, 4000),
@@ -270,7 +271,11 @@ async function handleAnalyze(req, res) {
 
   const systemPrompt = circuitAnalysisPrompt(
     payload.context,
-    JSON.stringify(deterministicIssues, null, 2)
+    JSON.stringify(
+      deterministicIssues,
+      null,
+      2
+    )
   );
 
   try {
@@ -290,7 +295,10 @@ async function handleAnalyze(req, res) {
 
     return sendJson(res, 200, parsed);
   } catch (error) {
-    console.error("Circuit analysis error:", error);
+    console.error(
+      "Circuit analysis error:",
+      error
+    );
 
     return sendJson(res, 500, {
       error:
@@ -335,7 +343,9 @@ async function handleOptimize(req, res) {
 
   try {
     const result = await generateGrokJson(
-      circuitOptimizationPrompt(payload.context),
+      circuitOptimizationPrompt(
+        payload.context
+      ),
       JSON.stringify({
         circuit: payload.circuit,
         note: payload.note ?? "",
@@ -348,7 +358,10 @@ async function handleOptimize(req, res) {
       parseOptimization(result)
     );
   } catch (error) {
-    console.error("Circuit optimization error:", error);
+    console.error(
+      "Circuit optimization error:",
+      error
+    );
 
     return sendJson(res, 500, {
       error:
@@ -393,7 +406,9 @@ async function handleLearningPath(req, res) {
 
   try {
     const result = await generateGrokJson(
-      learningPathPrompt(payload.context),
+      learningPathPrompt(
+        payload.context
+      ),
       JSON.stringify({
         context: payload.context,
         note: payload.note ?? "",
@@ -406,7 +421,10 @@ async function handleLearningPath(req, res) {
       parseLearningPath(result)
     );
   } catch (error) {
-    console.error("Learning path error:", error);
+    console.error(
+      "Learning path error:",
+      error
+    );
 
     return sendJson(res, 500, {
       error:
@@ -419,6 +437,262 @@ async function handleLearningPath(req, res) {
 }
 
 // ========================================
+// Execute Jupyter Notebook
+// ========================================
+
+async function executeNotebook(
+  notebook,
+  tempDir,
+  framework
+) {
+  const notebookPath = path.join(
+    tempDir,
+    "main.ipynb"
+  );
+
+  const executedPath = path.join(
+    tempDir,
+    "executed.ipynb"
+  );
+
+  // Save notebook JSON
+  fs.writeFileSync(
+    notebookPath,
+    JSON.stringify(
+      notebook,
+      null,
+      2
+    ),
+    "utf8"
+  );
+
+  return new Promise((resolve, reject) => {
+    execFile(
+      "python",
+      [
+        "-X",
+        "utf8",
+        "-m",
+        "jupyter",
+        "nbconvert",
+        "--to",
+        "notebook",
+        "--execute",
+        "--ExecutePreprocessor.timeout=30",
+        "--output",
+        "executed.ipynb",
+        "--output-dir",
+        tempDir,
+        notebookPath,
+      ],
+      {
+        timeout: 60000,
+
+        maxBuffer:
+          5 * 1024 * 1024,
+
+        windowsHide: true,
+
+        env: {
+          ...process.env,
+
+          PYTHONIOENCODING:
+            "utf-8",
+
+          PYTHONUTF8: "1",
+        },
+      },
+
+      (
+        error,
+        stdout,
+        stderr
+      ) => {
+        // ========================================
+        // Notebook execution failed
+        // ========================================
+
+        if (error) {
+          reject(
+            new Error(
+              stderr?.trim() ||
+                stdout?.trim() ||
+                error.message ||
+                `${framework} notebook execution failed.`
+            )
+          );
+
+          return;
+        }
+
+        // ========================================
+        // Read executed notebook
+        // ========================================
+
+        try {
+          const executedNotebook =
+            JSON.parse(
+              fs.readFileSync(
+                executedPath,
+                "utf8"
+              )
+            );
+
+          const cells =
+            executedNotebook.cells.map(
+              (cell) => {
+                let output = "";
+                let cellError = "";
+
+                // Only process code cells
+                if (
+                  cell.cell_type !==
+                  "code"
+                ) {
+                  return {
+                    output: "",
+                    error: "",
+                  };
+                }
+
+                for (
+                  const item of
+                    cell.outputs || []
+                ) {
+                  // -----------------------------
+                  // print() output
+                  // -----------------------------
+
+                  if (
+                    item.output_type ===
+                    "stream"
+                  ) {
+                    output +=
+                      Array.isArray(
+                        item.text
+                      )
+                        ? item.text.join(
+                            ""
+                          )
+                        : item.text ||
+                          "";
+                  }
+
+                  // -----------------------------
+                  // Normal expression output
+                  // -----------------------------
+
+                  if (
+                    item.output_type ===
+                    "execute_result"
+                  ) {
+                    const text =
+                      item.data?.[
+                        "text/plain"
+                      ];
+
+                    if (text) {
+                      output +=
+                        Array.isArray(
+                          text
+                        )
+                          ? text.join(
+                              ""
+                            )
+                          : text;
+                    }
+                  }
+
+                  // -----------------------------
+                  // display()
+                  // -----------------------------
+
+                  if (
+                    item.output_type ===
+                    "display_data"
+                  ) {
+                    const text =
+                      item.data?.[
+                        "text/plain"
+                      ];
+
+                    if (text) {
+                      output +=
+                        Array.isArray(
+                          text
+                        )
+                          ? text.join(
+                              ""
+                            )
+                          : text;
+                    }
+                  }
+
+                  // -----------------------------
+                  // Python error
+                  // -----------------------------
+
+                  if (
+                    item.output_type ===
+                    "error"
+                  ) {
+                    cellError =
+                      Array.isArray(
+                        item.traceback
+                      )
+                        ? item.traceback.join(
+                            "\n"
+                          )
+                        : item.traceback ||
+                          "";
+
+                    if (!cellError) {
+                      cellError =
+                        `${
+                          item.ename ||
+                          "Error"
+                        }: ${
+                          item.evalue ||
+                          "Execution failed"
+                        }`;
+                    }
+                  }
+                }
+
+                return {
+                  output:
+                    output.trim(),
+
+                  error:
+                    cellError.trim(),
+                };
+              }
+            );
+
+          resolve({
+            cells,
+
+            stdout:
+              stdout?.trim() || "",
+
+            stderr:
+              stderr?.trim() || "",
+          });
+        } catch (parseError) {
+          reject(
+            new Error(
+              parseError instanceof Error
+                ? parseError.message
+                : "Unable to read executed notebook."
+            )
+          );
+        }
+      }
+    );
+  });
+}
+
+// ========================================
 // Quantum Code Execution Handler
 // ========================================
 
@@ -426,27 +700,34 @@ async function handleRunCode(req, res) {
   let body;
 
   try {
-    body = await readRequestBody(req);
+    body =
+      await readRequestBody(req);
   } catch {
     return sendJson(res, 400, {
-      error: "Unable to read request body.",
+      error:
+        "Unable to read request body.",
     });
   }
 
   let payload;
 
   try {
-    payload = JSON.parse(body || "{}");
+    payload = JSON.parse(
+      body || "{}"
+    );
   } catch {
     return sendJson(res, 400, {
-      error: "Invalid JSON request.",
+      error:
+        "Invalid JSON request.",
     });
   }
 
   const {
     language,
     framework,
+    fileType = "python",
     code,
+    notebook,
   } = payload;
 
   // ========================================
@@ -461,6 +742,20 @@ async function handleRunCode(req, res) {
   }
 
   // ========================================
+  // Validate file type
+  // ========================================
+
+  if (
+    fileType !== "python" &&
+    fileType !== "notebook"
+  ) {
+    return sendJson(res, 400, {
+      error:
+        "Unsupported file type. Use python or notebook.",
+    });
+  }
+
+  // ========================================
   // Validate framework
   // ========================================
 
@@ -470,7 +765,11 @@ async function handleRunCode(req, res) {
     "cirq",
   ];
 
-  if (!allowedFrameworks.includes(framework)) {
+  if (
+    !allowedFrameworks.includes(
+      framework
+    )
+  ) {
     return sendJson(res, 400, {
       error:
         "Unsupported framework. Choose Qiskit, PennyLane, or Cirq.",
@@ -478,7 +777,166 @@ async function handleRunCode(req, res) {
   }
 
   // ========================================
-  // Validate code
+  // JUPYTER NOTEBOOK
+  // ========================================
+
+  if (
+    fileType === "notebook"
+  ) {
+    if (
+      !notebook ||
+      typeof notebook !== "object"
+    ) {
+      return sendJson(res, 400, {
+        error:
+          "Notebook data is required.",
+      });
+    }
+
+    // ========================================
+    // Validate notebook cells
+    // ========================================
+
+    if (
+      !Array.isArray(
+        notebook.cells
+      )
+    ) {
+      return sendJson(res, 400, {
+        error:
+          "Notebook cells are required.",
+      });
+    }
+
+    // Limit number of cells
+    if (
+      notebook.cells.length > 50
+    ) {
+      return sendJson(res, 400, {
+        error:
+          "Notebook cannot contain more than 50 cells.",
+      });
+    }
+
+    // ========================================
+    // Create temporary directory
+    // ========================================
+
+    const tempDir =
+      path.join(
+        os.tmpdir(),
+        `qubit-lab-notebook-${Date.now()}`
+      );
+
+    try {
+      fs.mkdirSync(
+        tempDir,
+        {
+          recursive: true,
+        }
+      );
+
+      console.log(
+        `Running ${framework} Jupyter notebook...`
+      );
+
+      console.log(
+        `Notebook directory: ${tempDir}`
+      );
+
+      // ========================================
+      // Execute notebook
+      // ========================================
+
+      const result =
+        await executeNotebook(
+          notebook,
+          tempDir,
+          framework
+        );
+
+      // ========================================
+      // Cleanup
+      // ========================================
+
+      try {
+        fs.rmSync(
+          tempDir,
+          {
+            recursive: true,
+            force: true,
+          }
+        );
+      } catch (cleanupError) {
+        console.error(
+          "Notebook cleanup error:",
+          cleanupError
+        );
+      }
+
+      // ========================================
+      // Success
+      // ========================================
+
+      return sendJson(
+        res,
+        200,
+        {
+          cells:
+            result.cells,
+
+          output:
+            result.stdout,
+
+          warning:
+            result.stderr,
+
+          framework,
+
+          fileType:
+            "notebook",
+        }
+      );
+    } catch (error) {
+      // ========================================
+      // Cleanup after failure
+      // ========================================
+
+      try {
+        fs.rmSync(
+          tempDir,
+          {
+            recursive: true,
+            force: true,
+          }
+        );
+      } catch {}
+
+      console.error(
+        "Notebook execution error:",
+        error
+      );
+
+      return sendJson(
+        res,
+        400,
+        {
+          error:
+            error instanceof Error
+              ? error.message
+              : "Notebook execution failed.",
+
+          framework,
+
+          fileType:
+            "notebook",
+        }
+      );
+    }
+  }
+
+  // ========================================
+  // NORMAL PYTHON FILE
   // ========================================
 
   if (
@@ -486,7 +944,8 @@ async function handleRunCode(req, res) {
     !code.trim()
   ) {
     return sendJson(res, 400, {
-      error: "Code is required.",
+      error:
+        "Code is required.",
     });
   }
 
@@ -494,20 +953,25 @@ async function handleRunCode(req, res) {
   // Create temporary directory
   // ========================================
 
-  const tempDir = path.join(
-    os.tmpdir(),
-    `qubit-lab-${Date.now()}`
-  );
+  const tempDir =
+    path.join(
+      os.tmpdir(),
+      `qubit-lab-${Date.now()}`
+    );
 
-  const filePath = path.join(
-    tempDir,
-    "main.py"
-  );
+  const filePath =
+    path.join(
+      tempDir,
+      "main.py"
+    );
 
   try {
-    fs.mkdirSync(tempDir, {
-      recursive: true,
-    });
+    fs.mkdirSync(
+      tempDir,
+      {
+        recursive: true,
+      }
+    );
 
     fs.writeFileSync(
       filePath,
@@ -517,6 +981,10 @@ async function handleRunCode(req, res) {
 
     console.log(
       `Running ${framework} Python program...`
+    );
+
+    console.log(
+      `Python file: ${filePath}`
     );
 
     // ========================================
@@ -541,8 +1009,12 @@ async function handleRunCode(req, res) {
         // Force UTF-8 on Windows
         env: {
           ...process.env,
-          PYTHONIOENCODING: "utf-8",
-          PYTHONUTF8: "1",
+
+          PYTHONIOENCODING:
+            "utf-8",
+
+          PYTHONUTF8:
+            "1",
         },
       },
 
@@ -563,7 +1035,9 @@ async function handleRunCode(req, res) {
               force: true,
             }
           );
-        } catch (cleanupError) {
+        } catch (
+          cleanupError
+        ) {
           console.error(
             "Temporary file cleanup error:",
             cleanupError
@@ -595,9 +1069,13 @@ async function handleRunCode(req, res) {
                 "Python execution failed.",
 
               output:
-                stdout?.trim() || "",
+                stdout?.trim() ||
+                "",
 
               framework,
+
+              fileType:
+                "python",
             }
           );
         }
@@ -617,10 +1095,15 @@ async function handleRunCode(req, res) {
             // stderr can contain warnings.
             // It is NOT treated as an error
             // when Python exits successfully.
+
             warning:
-              stderr?.trim() || "",
+              stderr?.trim() ||
+              "",
 
             framework,
+
+            fileType:
+              "python",
           }
         );
       }
@@ -662,134 +1145,145 @@ async function handleRunCode(req, res) {
 // HTTP Server
 // ========================================
 
-const server = http.createServer(
-  async (req, res) => {
-    try {
-      setCorsHeaders(res);
+const server =
+  http.createServer(
+    async (req, res) => {
+      try {
+        setCorsHeaders(res);
 
-      // ========================================
-      // CORS preflight
-      // ========================================
+        // ========================================
+        // CORS preflight
+        // ========================================
 
-      if (req.method === "OPTIONS") {
-        res.writeHead(204);
-        return res.end();
-      }
-
-      const url = new URL(
-        req.url,
-        `http://${
-          req.headers.host || "localhost"
-        }`
-      );
-
-      // ========================================
-      // Code execution endpoint
-      // ========================================
-
-      if (
-        url.pathname === "/api/run" &&
-        req.method === "POST"
-      ) {
-        return await handleRunCode(
-          req,
-          res
-        );
-      }
-
-      // ========================================
-      // AI chat endpoint
-      // ========================================
-
-      if (
-        url.pathname === "/api/ai/chat" &&
-        req.method === "POST"
-      ) {
-        return await handleChat(
-          req,
-          res
-        );
-      }
-
-      // ========================================
-      // Circuit analysis endpoint
-      // ========================================
-
-      if (
-        url.pathname ===
-          "/api/ai/analyze-circuit" &&
-        req.method === "POST"
-      ) {
-        return await handleAnalyze(
-          req,
-          res
-        );
-      }
-
-      // ========================================
-      // Circuit optimization endpoint
-      // ========================================
-
-      if (
-        url.pathname ===
-          "/api/ai/optimize-circuit" &&
-        req.method === "POST"
-      ) {
-        return await handleOptimize(
-          req,
-          res
-        );
-      }
-
-      // ========================================
-      // Learning path endpoint
-      // ========================================
-
-      if (
-        url.pathname ===
-          "/api/ai/learning-path" &&
-        req.method === "POST"
-      ) {
-        return await handleLearningPath(
-          req,
-          res
-        );
-      }
-
-      // ========================================
-      // Unknown route
-      // ========================================
-
-      return sendJson(
-        res,
-        404,
-        {
-          error: "Not found.",
+        if (
+          req.method ===
+          "OPTIONS"
+        ) {
+          res.writeHead(204);
+          return res.end();
         }
-      );
-    } catch (error) {
-      console.error(
-        "Server error:",
-        error
-      );
 
-      if (!res.headersSent) {
+        const url =
+          new URL(
+            req.url,
+            `http://${
+              req.headers.host ||
+              "localhost"
+            }`
+          );
+
+        // ========================================
+        // Code execution endpoint
+        // ========================================
+
+        if (
+          url.pathname ===
+            "/api/run" &&
+          req.method === "POST"
+        ) {
+          return await handleRunCode(
+            req,
+            res
+          );
+        }
+
+        // ========================================
+        // AI chat endpoint
+        // ========================================
+
+        if (
+          url.pathname ===
+            "/api/ai/chat" &&
+          req.method === "POST"
+        ) {
+          return await handleChat(
+            req,
+            res
+          );
+        }
+
+        // ========================================
+        // Circuit analysis endpoint
+        // ========================================
+
+        if (
+          url.pathname ===
+            "/api/ai/analyze-circuit" &&
+          req.method === "POST"
+        ) {
+          return await handleAnalyze(
+            req,
+            res
+          );
+        }
+
+        // ========================================
+        // Circuit optimization endpoint
+        // ========================================
+
+        if (
+          url.pathname ===
+            "/api/ai/optimize-circuit" &&
+          req.method === "POST"
+        ) {
+          return await handleOptimize(
+            req,
+            res
+          );
+        }
+
+        // ========================================
+        // Learning path endpoint
+        // ========================================
+
+        if (
+          url.pathname ===
+            "/api/ai/learning-path" &&
+          req.method === "POST"
+        ) {
+          return await handleLearningPath(
+            req,
+            res
+          );
+        }
+
+        // ========================================
+        // Unknown route
+        // ========================================
+
         return sendJson(
           res,
-          500,
+          404,
           {
             error:
-              "Internal server error.",
+              "Not found.",
           }
         );
-      }
+      } catch (error) {
+        console.error(
+          "Server error:",
+          error
+        );
 
-      if (!res.writableEnded) {
-        res.end();
+        if (!res.headersSent) {
+          return sendJson(
+            res,
+            500,
+            {
+              error:
+                "Internal server error.",
+            }
+          );
+        }
+
+        if (
+          !res.writableEnded
+        ) {
+          res.end();
+        }
       }
     }
-  }
-);
+  );
 
 // ========================================
 // Start server
