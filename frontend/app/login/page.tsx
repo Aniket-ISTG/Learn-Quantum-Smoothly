@@ -13,15 +13,15 @@ export default function LoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    // const { error } = await supabase.auth.signInWithPassword({
+    //   email,
+    //   password,
+    // });
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+    // if (error) {
+    //   alert(error.message);
+    //   return;
+    // }
 
     router.push("/");
   };

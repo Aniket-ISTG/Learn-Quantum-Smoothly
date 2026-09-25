@@ -1,102 +1,103 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import CodeEditor from "./ide-editor";
 
-type Language = "c" | "cpp" | "python" | "java" | "javascript";
+type Framework = "qiskit" | "pennylane" | "cirq";
 
-type LanguageOption = {
-  value: Language;
+type FrameworkOption = {
+  value: Framework;
   label: string;
-  fileName: string;
 };
 
-const languages: LanguageOption[] = [
+const frameworks: FrameworkOption[] = [
   {
-    value: "javascript",
-    label: "JavaScript",
-    fileName: "main.js",
+    value: "qiskit",
+    label: "Qiskit",
   },
   {
-    value: "python",
-    label: "Python",
-    fileName: "main.py",
+    value: "pennylane",
+    label: "PennyLane",
   },
   {
-    value: "c",
-    label: "C",
-    fileName: "main.c",
-  },
-  {
-    value: "cpp",
-    label: "C++",
-    fileName: "main.cpp",
-  },
-  {
-    value: "java",
-    label: "Java",
-    fileName: "Main.java",
+    value: "cirq",
+    label: "Cirq",
   },
 ];
 
-const starterCode: Record<Language, string> = {
-  javascript: `console.log("Hello from JavaScript");`,
+const starterCode: Record<Framework, string> = {
+  qiskit: `from qiskit import QuantumCircuit
 
-  python: `print("Hello from Python")`,
+qc = QuantumCircuit(2)
 
-  c: `#include <stdio.h>
+qc.h(0)
+qc.cx(0, 1)
 
-int main() {
-    printf("Hello from C\\n");
-    return 0;
-}`,
+print(qc)
+`,
 
-  cpp: `#include <iostream>
-using namespace std;
+  pennylane: `import pennylane as qml
 
-int main() {
-    cout << "Hello from C++" << endl;
-    return 0;
-}`,
+dev = qml.device("default.qubit", wires=2)
 
-  java: `public class Main {
-    public static void main(String[] args) {
-        System.out.println("Hello from Java");
-    }
-}`,
+@qml.qnode(dev)
+def circuit():
+    qml.Hadamard(wires=0)
+    qml.CNOT(wires=[0, 1])
+    return qml.probs(wires=[0, 1])
+
+print(circuit())
+`,
+
+  cirq: `import cirq
+
+q0 = cirq.LineQubit(0)
+q1 = cirq.LineQubit(1)
+
+circuit = cirq.Circuit(
+    cirq.H(q0),
+    cirq.CNOT(q0, q1)
+)
+
+print(circuit)
+`,
 };
 
 export default function CodeIDE() {
-  const [language, setLanguage] =
-    useState<Language>("javascript");
+  const [framework, setFramework] =
+    useState<Framework>("qiskit");
 
   const [code, setCode] = useState<string>(
-    starterCode.javascript
+    starterCode.qiskit
   );
 
   const [output, setOutput] = useState("");
   const [error, setError] = useState("");
   const [isRunning, setIsRunning] = useState(false);
 
-  const selectedLanguage = useMemo(() => {
-    return (
-      languages.find((item) => item.value === language) ??
-      languages[0]
-    );
-  }, [language]);
+  const selectedFramework =
+    frameworks.find(
+      (item) => item.value === framework
+    ) ?? frameworks[0];
 
-  function handleLanguageChange(
-    nextLanguage: Language
+  function handleFrameworkChange(
+    nextFramework: Framework
   ) {
-    setLanguage(nextLanguage);
-    setCode(starterCode[nextLanguage]);
+    setFramework(nextFramework);
+
+    // Load starter code for the selected framework
+    setCode(starterCode[nextFramework]);
+
+    // Clear previous output/errors
     setOutput("");
     setError("");
   }
 
   async function handleRunCode() {
     if (!code.trim()) {
-      setError("Please write some code before running it.");
+      setError(
+        "Please write some Python code before running it."
+      );
       setOutput("");
       return;
     }
@@ -114,7 +115,8 @@ export default function CodeIDE() {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            language,
+            language: "python",
+            framework,
             code,
           }),
         }
@@ -134,7 +136,10 @@ export default function CodeIDE() {
       setOutput(result.output || "");
       setError(result.error || "");
     } catch (requestError) {
-      console.error("IDE request error:", requestError);
+      console.error(
+        "IDE request error:",
+        requestError
+      );
 
       setError(
         "Could not connect to the backend. Make sure server.js is running on port 4000."
@@ -150,7 +155,7 @@ export default function CodeIDE() {
   }
 
   function handleResetCode() {
-    setCode(starterCode[language]);
+    setCode(starterCode[framework]);
     setOutput("");
     setError("");
   }
@@ -170,7 +175,7 @@ export default function CodeIDE() {
             </h2>
 
             <p className="text-sm text-slate-500">
-              Write and run programs in multiple languages.
+              Write and run quantum programs with Python.
             </p>
           </div>
         </div>
@@ -178,23 +183,23 @@ export default function CodeIDE() {
         {/* Controls */}
         <div className="flex flex-wrap items-center gap-2">
           <label
-            htmlFor="language-select"
+            htmlFor="framework-select"
             className="text-sm font-semibold text-slate-700"
           >
-            Language
+            Framework
           </label>
 
           <select
-            id="language-select"
-            value={language}
+            id="framework-select"
+            value={framework}
             onChange={(event) =>
-              handleLanguageChange(
-                event.target.value as Language
+              handleFrameworkChange(
+                event.target.value as Framework
               )
             }
             className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
           >
-            {languages.map((item) => (
+            {frameworks.map((item) => (
               <option
                 key={item.value}
                 value={item.value}
@@ -229,19 +234,19 @@ export default function CodeIDE() {
           <span>📄</span>
 
           <span className="font-mono">
-            {selectedLanguage.fileName}
+            main.py
           </span>
         </div>
 
         <span className="text-xs text-slate-500">
-          {selectedLanguage.label}
+          {selectedFramework.label} • Python
         </span>
       </div>
 
       {/* Advanced editor */}
       <CodeEditor
         code={code}
-        language={language}
+        language="python"
         onChange={setCode}
       />
 
@@ -253,7 +258,7 @@ export default function CodeIDE() {
           </h3>
 
           <p className="text-sm text-slate-500">
-            Output and errors from your program appear here.
+            Output and errors from your quantum program appear here.
           </p>
         </div>
 
@@ -270,13 +275,13 @@ export default function CodeIDE() {
       <div className="mt-3 min-h-[160px] overflow-auto rounded-xl border border-slate-700 bg-[#0f172a] p-4 font-mono text-sm">
         {!output && !error && !isRunning && (
           <p className="text-slate-500">
-            Run your program to see the output...
+            Run your {selectedFramework.label} program to see the output...
           </p>
         )}
 
         {isRunning && (
           <p className="text-yellow-300">
-            Running your {selectedLanguage.label} program...
+            Running your {selectedFramework.label} program...
           </p>
         )}
 
@@ -303,7 +308,7 @@ export default function CodeIDE() {
         </span>
 
         <span>
-          Supported: C, C++, Python, Java, JavaScript
+          Python • Qiskit • PennyLane • Cirq
         </span>
       </div>
     </section>

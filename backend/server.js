@@ -4,9 +4,6 @@ const path = require("path");
 const os = require("os");
 const http = require("http");
 const { execFile } = require("child_process");
-const { promisify } = require("util");
-
-const execFileAsync = promisify(execFile);
 
 // ========================================
 // Load environment variables
@@ -422,13 +419,7 @@ async function handleLearningPath(req, res) {
 }
 
 // ========================================
-// Code Execution Handler
-// Supports:
-// C
-// C++
-// Python
-// Java
-// JavaScript
+// Quantum Code Execution Handler
 // ========================================
 
 async function handleRunCode(req, res) {
@@ -452,242 +443,218 @@ async function handleRunCode(req, res) {
     });
   }
 
-  const { language, code } = payload;
+  const {
+    language,
+    framework,
+    code,
+  } = payload;
 
-  const supportedLanguages = [
-    "c",
-    "cpp",
-    "python",
-    "java",
-    "javascript",
-  ];
+  // ========================================
+  // Validate language
+  // ========================================
 
-  if (!supportedLanguages.includes(language)) {
+  if (language !== "python") {
     return sendJson(res, 400, {
-      error: "Unsupported language.",
+      error:
+        "Only Python is supported in the Quantum Code Lab.",
     });
   }
 
-  if (typeof code !== "string" || !code.trim()) {
+  // ========================================
+  // Validate framework
+  // ========================================
+
+  const allowedFrameworks = [
+    "qiskit",
+    "pennylane",
+    "cirq",
+  ];
+
+  if (!allowedFrameworks.includes(framework)) {
+    return sendJson(res, 400, {
+      error:
+        "Unsupported framework. Choose Qiskit, PennyLane, or Cirq.",
+    });
+  }
+
+  // ========================================
+  // Validate code
+  // ========================================
+
+  if (
+    typeof code !== "string" ||
+    !code.trim()
+  ) {
     return sendJson(res, 400, {
       error: "Code is required.",
     });
   }
 
-  const temporaryDirectory = await fsPromises.mkdtemp(
-    path.join(os.tmpdir(), "qubit-lab-")
+  // ========================================
+  // Create temporary directory
+  // ========================================
+
+  const tempDir = path.join(
+    os.tmpdir(),
+    `qubit-lab-${Date.now()}`
   );
 
-  let sourceFile;
-  let compileCommand = null;
-  let compileArguments = [];
-  let runCommand;
-  let runArguments = [];
+  const filePath = path.join(
+    tempDir,
+    "main.py"
+  );
 
   try {
-    // ========================================
-    // C
-    // ========================================
+    fs.mkdirSync(tempDir, {
+      recursive: true,
+    });
 
-    if (language === "c") {
-      sourceFile = path.join(
-        temporaryDirectory,
-        "main.c"
-      );
+    fs.writeFileSync(
+      filePath,
+      code,
+      "utf8"
+    );
 
-      await fsPromises.writeFile(
-        sourceFile,
-        code,
-        "utf8"
-      );
-
-      const executableName =
-        process.platform === "win32"
-          ? "main.exe"
-          : "main";
-
-      compileCommand = "gcc";
-
-      compileArguments = [
-        sourceFile,
-        "-o",
-        path.join(temporaryDirectory, executableName),
-      ];
-
-      runCommand = path.join(
-        temporaryDirectory,
-        executableName
-      );
-    }
+    console.log(
+      `Running ${framework} Python program...`
+    );
 
     // ========================================
-    // C++
+    // Execute Python
     // ========================================
 
-    if (language === "cpp") {
-      sourceFile = path.join(
-        temporaryDirectory,
-        "main.cpp"
-      );
+    execFile(
+      "python",
+      [
+        "-X",
+        "utf8",
+        filePath,
+      ],
+      {
+        timeout: 15000,
 
-      await fsPromises.writeFile(
-        sourceFile,
-        code,
-        "utf8"
-      );
+        maxBuffer:
+          1024 * 1024,
 
-      const executableName =
-        process.platform === "win32"
-          ? "main.exe"
-          : "main";
+        windowsHide: true,
 
-      compileCommand = "g++";
+        // Force UTF-8 on Windows
+        env: {
+          ...process.env,
+          PYTHONIOENCODING: "utf-8",
+          PYTHONUTF8: "1",
+        },
+      },
 
-      compileArguments = [
-        sourceFile,
-        "-o",
-        path.join(temporaryDirectory, executableName),
-      ];
+      (
+        error,
+        stdout,
+        stderr
+      ) => {
+        // ========================================
+        // Clean temporary files
+        // ========================================
 
-      runCommand = path.join(
-        temporaryDirectory,
-        executableName
-      );
-    }
+        try {
+          fs.rmSync(
+            tempDir,
+            {
+              recursive: true,
+              force: true,
+            }
+          );
+        } catch (cleanupError) {
+          console.error(
+            "Temporary file cleanup error:",
+            cleanupError
+          );
+        }
 
-    // ========================================
-    // Python
-    // ========================================
+        // ========================================
+        // Python execution failed
+        // ========================================
 
-    if (language === "python") {
-      sourceFile = path.join(
-        temporaryDirectory,
-        "main.py"
-      );
+        if (error) {
+          console.error(
+            `${framework} execution error:`,
+            error
+          );
 
-      await fsPromises.writeFile(
-        sourceFile,
-        code,
-        "utf8"
-      );
+          console.error(
+            "Python stderr:",
+            stderr
+          );
 
-      runCommand =
-        process.platform === "win32"
-          ? "python"
-          : "python3";
+          return sendJson(
+            res,
+            400,
+            {
+              error:
+                stderr?.trim() ||
+                error.message ||
+                "Python execution failed.",
 
-      runArguments = [sourceFile];
-    }
+              output:
+                stdout?.trim() || "",
 
-    // ========================================
-    // Java
-    // ========================================
+              framework,
+            }
+          );
+        }
 
-    if (language === "java") {
-      sourceFile = path.join(
-        temporaryDirectory,
-        "Main.java"
-      );
+        // ========================================
+        // Python execution successful
+        // ========================================
 
-      await fsPromises.writeFile(
-        sourceFile,
-        code,
-        "utf8"
-      );
-
-      compileCommand = "javac";
-      compileArguments = [sourceFile];
-
-      runCommand = "java";
-      runArguments = [
-        "-cp",
-        temporaryDirectory,
-        "Main",
-      ];
-    }
-
-    // ========================================
-    // JavaScript
-    // ========================================
-
-    if (language === "javascript") {
-      sourceFile = path.join(
-        temporaryDirectory,
-        "main.js"
-      );
-
-      await fsPromises.writeFile(
-        sourceFile,
-        code,
-        "utf8"
-      );
-
-      runCommand = process.execPath;
-      runArguments = [sourceFile];
-    }
-
-    // ========================================
-    // Compile C, C++, or Java
-    // ========================================
-
-    if (compileCommand) {
-      try {
-        await execFileAsync(
-          compileCommand,
-          compileArguments,
+        return sendJson(
+          res,
+          200,
           {
-            cwd: temporaryDirectory,
-            timeout: 10000,
-            maxBuffer: 1024 * 1024,
-            windowsHide: true,
+            output:
+              stdout?.trim() ||
+              "Program executed successfully.",
+
+            // stderr can contain warnings.
+            // It is NOT treated as an error
+            // when Python exits successfully.
+            warning:
+              stderr?.trim() || "",
+
+            framework,
           }
         );
-      } catch (error) {
-        return sendJson(res, 400, {
-          output: "",
-          error:
-            error.stderr ||
-            error.stdout ||
-            error.message ||
-            "Compilation failed.",
-        });
       }
-    }
-
+    );
+  } catch (error) {
     // ========================================
-    // Run the code
+    // Cleanup after setup failure
     // ========================================
 
     try {
-      const result = await execFileAsync(
-        runCommand,
-        runArguments,
+      fs.rmSync(
+        tempDir,
         {
-          cwd: temporaryDirectory,
-          timeout: 5000,
-          maxBuffer: 1024 * 1024,
-          windowsHide: true,
+          recursive: true,
+          force: true,
         }
       );
+    } catch {}
 
-      return sendJson(res, 200, {
-        output: result.stdout || "",
-        error: result.stderr || "",
-      });
-    } catch (error) {
-      return sendJson(res, 400, {
-        output: error.stdout || "",
+    console.error(
+      "Code execution setup error:",
+      error
+    );
+
+    return sendJson(
+      res,
+      500,
+      {
         error:
-          error.stderr ||
-          error.message ||
-          "Execution failed.",
-      });
-    }
-  } finally {
-    await fsPromises.rm(temporaryDirectory, {
-      recursive: true,
-      force: true,
-    });
+          error instanceof Error
+            ? error.message
+            : "Unable to execute Python code.",
+      }
+    );
   }
 }
 
@@ -700,7 +667,10 @@ const server = http.createServer(
     try {
       setCorsHeaders(res);
 
-      // Handle CORS preflight request
+      // ========================================
+      // CORS preflight
+      // ========================================
+
       if (req.method === "OPTIONS") {
         res.writeHead(204);
         return res.end();
@@ -708,7 +678,9 @@ const server = http.createServer(
 
       const url = new URL(
         req.url,
-        `http://${req.headers.host || "localhost"}`
+        `http://${
+          req.headers.host || "localhost"
+        }`
       );
 
       // ========================================
@@ -719,7 +691,10 @@ const server = http.createServer(
         url.pathname === "/api/run" &&
         req.method === "POST"
       ) {
-        return await handleRunCode(req, res);
+        return await handleRunCode(
+          req,
+          res
+        );
       }
 
       // ========================================
@@ -730,7 +705,10 @@ const server = http.createServer(
         url.pathname === "/api/ai/chat" &&
         req.method === "POST"
       ) {
-        return await handleChat(req, res);
+        return await handleChat(
+          req,
+          res
+        );
       }
 
       // ========================================
@@ -738,10 +716,14 @@ const server = http.createServer(
       // ========================================
 
       if (
-        url.pathname === "/api/ai/analyze-circuit" &&
+        url.pathname ===
+          "/api/ai/analyze-circuit" &&
         req.method === "POST"
       ) {
-        return await handleAnalyze(req, res);
+        return await handleAnalyze(
+          req,
+          res
+        );
       }
 
       // ========================================
@@ -749,10 +731,14 @@ const server = http.createServer(
       // ========================================
 
       if (
-        url.pathname === "/api/ai/optimize-circuit" &&
+        url.pathname ===
+          "/api/ai/optimize-circuit" &&
         req.method === "POST"
       ) {
-        return await handleOptimize(req, res);
+        return await handleOptimize(
+          req,
+          res
+        );
       }
 
       // ========================================
@@ -760,26 +746,42 @@ const server = http.createServer(
       // ========================================
 
       if (
-        url.pathname === "/api/ai/learning-path" &&
+        url.pathname ===
+          "/api/ai/learning-path" &&
         req.method === "POST"
       ) {
-        return await handleLearningPath(req, res);
+        return await handleLearningPath(
+          req,
+          res
+        );
       }
 
       // ========================================
       // Unknown route
       // ========================================
 
-      return sendJson(res, 404, {
-        error: "Not found.",
-      });
+      return sendJson(
+        res,
+        404,
+        {
+          error: "Not found.",
+        }
+      );
     } catch (error) {
-      console.error("Server error:", error);
+      console.error(
+        "Server error:",
+        error
+      );
 
       if (!res.headersSent) {
-        return sendJson(res, 500, {
-          error: "Internal server error.",
-        });
+        return sendJson(
+          res,
+          500,
+          {
+            error:
+              "Internal server error.",
+          }
+        );
       }
 
       if (!res.writableEnded) {
@@ -793,8 +795,11 @@ const server = http.createServer(
 // Start server
 // ========================================
 
-server.listen(PORT, () => {
-  console.log(
-    `AI backend running on http://localhost:${PORT}`
-  );
-});
+server.listen(
+  PORT,
+  () => {
+    console.log(
+      `AI backend running on http://localhost:${PORT}`
+    );
+  }
+);
