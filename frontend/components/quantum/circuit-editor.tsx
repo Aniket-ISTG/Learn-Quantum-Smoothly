@@ -1,14 +1,16 @@
-import Link from "next/link";
+"use client";
 
-export function CircuitEditor() {
+import dynamic from "next/dynamic";
+
+export const QuirkCircuit = dynamic(
+  () => import("./quirk-circuit").then((mod) => mod.QuirkCircuit),
+  { ssr: false }
+);
+
+export function CircuitEditor({ initialCircuit }: { initialCircuit?: string }) {
   return (
-    <div className="panel rounded-2xl p-8 text-center">
-      <p className="text-slate-600">
-        The circuit editor is available in the full playground experience.
-      </p>
-      <Link href="/playground" className="btn-primary mt-4">
-        Open playground →
-      </Link>
+    <div className="w-full rounded-2xl border border-cyan-100 overflow-hidden bg-white shadow-md">
+      <QuirkCircuit initialCircuit={initialCircuit} />
     </div>
   );
 }
