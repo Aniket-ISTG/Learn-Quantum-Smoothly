@@ -4,6 +4,18 @@ const path = require("path");
 const os = require("os");
 const http = require("http");
 const { execFile } = require("child_process");
+const { promisify } = require("util");
+
+const execFileAsync = promisify(execFile);
+
+// ========================================
+// Docker configuration
+// ========================================
+
+const DOCKER_IMAGE = "quantum-python";
+const DOCKER_MEMORY = "512m";
+const DOCKER_CPUS = "1";
+const DOCKER_TIMEOUT = 20000;
 
 // ========================================
 // Load environment variables
@@ -437,6 +449,63 @@ async function handleLearningPath(req, res) {
 }
 
 // ========================================
+// Docker Python Runner
+// ========================================
+
+async function runDockerPython(
+  tempDir,
+  pythonArgs,
+  timeout = DOCKER_TIMEOUT
+) {
+  const dockerArgs = [
+    "run",
+    "--rm",
+
+    // No internet access
+    "--network",
+    "none",
+
+    // CPU limit
+    "--cpus",
+    DOCKER_CPUS,
+
+    // Memory limit
+    "--memory",
+    DOCKER_MEMORY,
+
+    // Process limit
+    "--pids-limit",
+    "128",
+
+    // Mount temporary workspace
+    "-v",
+    `${tempDir}:/workspace`,
+
+    // Docker image
+    DOCKER_IMAGE,
+
+    // Python
+    "python",
+
+    // UTF-8
+    "-X",
+    "utf8",
+
+    ...pythonArgs,
+  ];
+
+  return execFileAsync(
+    "docker",
+    dockerArgs,
+    {
+      timeout,
+      maxBuffer: 5 * 1024 * 1024,
+      windowsHide: true,
+    }
+  );
+}
+
+// ========================================
 // Execute Jupyter Notebook
 // ========================================
 
@@ -455,7 +524,7 @@ async function executeNotebook(
     "executed.ipynb"
   );
 
-  // Save notebook JSON
+  // Save notebook
   fs.writeFileSync(
     notebookPath,
     JSON.stringify(
@@ -466,260 +535,234 @@ async function executeNotebook(
     "utf8"
   );
 
-  return new Promise((resolve, reject) => {
-    execFile(
-      "python",
+  try {
+    const {
+      stdout,
+      stderr,
+    } = await runDockerPython(
+      tempDir,
       [
-        "-X",
-        "utf8",
         "-m",
         "jupyter",
         "nbconvert",
         "--to",
         "notebook",
         "--execute",
+
         "--ExecutePreprocessor.timeout=30",
+
         "--output",
         "executed.ipynb",
+
         "--output-dir",
-        tempDir,
-        notebookPath,
+        "/workspace",
+
+        "/workspace/main.ipynb",
       ],
-      {
-        timeout: 60000,
-
-        maxBuffer:
-          5 * 1024 * 1024,
-
-        windowsHide: true,
-
-        env: {
-          ...process.env,
-
-          PYTHONIOENCODING:
-            "utf-8",
-
-          PYTHONUTF8: "1",
-        },
-      },
-
-      (
-        error,
-        stdout,
-        stderr
-      ) => {
-        // ========================================
-        // Notebook execution failed
-        // ========================================
-
-        if (error) {
-          reject(
-            new Error(
-              stderr?.trim() ||
-                stdout?.trim() ||
-                error.message ||
-                `${framework} notebook execution failed.`
-            )
-          );
-
-          return;
-        }
-
-        // ========================================
-        // Read executed notebook
-        // ========================================
-
-        try {
-          const executedNotebook =
-            JSON.parse(
-              fs.readFileSync(
-                executedPath,
-                "utf8"
-              )
-            );
-
-          const cells =
-            executedNotebook.cells.map(
-              (cell) => {
-                let output = "";
-                let cellError = "";
-
-                // Only process code cells
-                if (
-                  cell.cell_type !==
-                  "code"
-                ) {
-                  return {
-                    output: "",
-                    error: "",
-                  };
-                }
-
-                for (
-                  const item of
-                    cell.outputs || []
-                ) {
-                  // -----------------------------
-                  // print() output
-                  // -----------------------------
-
-                  if (
-                    item.output_type ===
-                    "stream"
-                  ) {
-                    output +=
-                      Array.isArray(
-                        item.text
-                      )
-                        ? item.text.join(
-                            ""
-                          )
-                        : item.text ||
-                          "";
-                  }
-
-                  // -----------------------------
-                  // Normal expression output
-                  // -----------------------------
-
-                  if (
-                    item.output_type ===
-                    "execute_result"
-                  ) {
-                    const text =
-                      item.data?.[
-                        "text/plain"
-                      ];
-
-                    if (text) {
-                      output +=
-                        Array.isArray(
-                          text
-                        )
-                          ? text.join(
-                              ""
-                            )
-                          : text;
-                    }
-                  }
-
-                  // -----------------------------
-                  // display()
-                  // -----------------------------
-
-                  if (
-                    item.output_type ===
-                    "display_data"
-                  ) {
-                    const text =
-                      item.data?.[
-                        "text/plain"
-                      ];
-
-                    if (text) {
-                      output +=
-                        Array.isArray(
-                          text
-                        )
-                          ? text.join(
-                              ""
-                            )
-                          : text;
-                    }
-                  }
-
-                  // -----------------------------
-                  // Python error
-                  // -----------------------------
-
-                  if (
-                    item.output_type ===
-                    "error"
-                  ) {
-                    cellError =
-                      Array.isArray(
-                        item.traceback
-                      )
-                        ? item.traceback.join(
-                            "\n"
-                          )
-                        : item.traceback ||
-                          "";
-
-                    if (!cellError) {
-                      cellError =
-                        `${
-                          item.ename ||
-                          "Error"
-                        }: ${
-                          item.evalue ||
-                          "Execution failed"
-                        }`;
-                    }
-                  }
-                }
-
-                return {
-                  output:
-                    output.trim(),
-
-                  error:
-                    cellError.trim(),
-                };
-              }
-            );
-
-          resolve({
-            cells,
-
-            stdout:
-              stdout?.trim() || "",
-
-            stderr:
-              stderr?.trim() || "",
-          });
-        } catch (parseError) {
-          reject(
-            new Error(
-              parseError instanceof Error
-                ? parseError.message
-                : "Unable to read executed notebook."
-            )
-          );
-        }
-      }
+      60000
     );
-  });
+
+    // ========================================
+    // Read executed notebook
+    // ========================================
+
+    if (!fs.existsSync(executedPath)) {
+      throw new Error(
+        stderr?.trim() ||
+        stdout?.trim() ||
+        "Executed notebook was not created."
+      );
+    }
+
+    const executedNotebook =
+      JSON.parse(
+        fs.readFileSync(
+          executedPath,
+          "utf8"
+        )
+      );
+
+    // ========================================
+    // Extract cell outputs
+    // ========================================
+
+    const cells =
+      executedNotebook.cells.map(
+        (cell) => {
+          let output = "";
+          let cellError = "";
+
+          // Ignore markdown cells
+          if (
+            cell.cell_type !== "code"
+          ) {
+            return {
+              output: "",
+              error: "",
+            };
+          }
+
+          for (
+            const item of
+              cell.outputs || []
+          ) {
+            // -----------------------------
+            // print() output
+            // -----------------------------
+
+            if (
+              item.output_type ===
+              "stream"
+            ) {
+              output +=
+                Array.isArray(
+                  item.text
+                )
+                  ? item.text.join("")
+                  : item.text || "";
+            }
+
+            // -----------------------------
+            // Expression output
+            // -----------------------------
+
+            if (
+              item.output_type ===
+              "execute_result"
+            ) {
+              const text =
+                item.data?.[
+                  "text/plain"
+                ];
+
+              if (text) {
+                output +=
+                  Array.isArray(text)
+                    ? text.join("")
+                    : text;
+              }
+            }
+
+            // -----------------------------
+            // display() output
+            // -----------------------------
+
+            if (
+              item.output_type ===
+              "display_data"
+            ) {
+              const text =
+                item.data?.[
+                  "text/plain"
+                ];
+
+              if (text) {
+                output +=
+                  Array.isArray(text)
+                    ? text.join("")
+                    : text;
+              }
+            }
+
+            // -----------------------------
+            // Python error
+            // -----------------------------
+
+            if (
+              item.output_type ===
+              "error"
+            ) {
+              cellError =
+                Array.isArray(
+                  item.traceback
+                )
+                  ? item.traceback.join(
+                      "\n"
+                    )
+                  : item.traceback || "";
+
+              if (!cellError) {
+                cellError =
+                  `${
+                    item.ename ||
+                    "Error"
+                  }: ${
+                    item.evalue ||
+                    "Execution failed"
+                  }`;
+              }
+            }
+          }
+
+          return {
+            output:
+              output.trim(),
+
+            error:
+              cellError.trim(),
+          };
+        }
+      );
+
+    return {
+      cells,
+
+      stdout:
+        stdout?.trim() || "",
+
+      stderr:
+        stderr?.trim() || "",
+    };
+  } catch (error) {
+    throw new Error(
+      error?.stderr?.trim() ||
+      error?.stdout?.trim() ||
+      error?.message ||
+      `${framework} notebook execution failed.`
+    );
+  }
 }
 
 // ========================================
 // Quantum Code Execution Handler
 // ========================================
 
-async function handleRunCode(req, res) {
+async function handleRunCode(
+  req,
+  res
+) {
   let body;
 
   try {
     body =
       await readRequestBody(req);
   } catch {
-    return sendJson(res, 400, {
-      error:
-        "Unable to read request body.",
-    });
+    return sendJson(
+      res,
+      400,
+      {
+        error:
+          "Unable to read request body.",
+      }
+    );
   }
 
   let payload;
 
   try {
-    payload = JSON.parse(
-      body || "{}"
-    );
+    payload =
+      JSON.parse(
+        body || "{}"
+      );
   } catch {
-    return sendJson(res, 400, {
-      error:
-        "Invalid JSON request.",
-    });
+    return sendJson(
+      res,
+      400,
+      {
+        error:
+          "Invalid JSON request.",
+      }
+    );
   }
 
   const {
@@ -734,11 +777,17 @@ async function handleRunCode(req, res) {
   // Validate language
   // ========================================
 
-  if (language !== "python") {
-    return sendJson(res, 400, {
-      error:
-        "Only Python is supported in the Quantum Code Lab.",
-    });
+  if (
+    language !== "python"
+  ) {
+    return sendJson(
+      res,
+      400,
+      {
+        error:
+          "Only Python is supported in the Quantum Code Lab.",
+      }
+    );
   }
 
   // ========================================
@@ -749,10 +798,14 @@ async function handleRunCode(req, res) {
     fileType !== "python" &&
     fileType !== "notebook"
   ) {
-    return sendJson(res, 400, {
-      error:
-        "Unsupported file type. Use python or notebook.",
-    });
+    return sendJson(
+      res,
+      400,
+      {
+        error:
+          "Unsupported file type. Use python or notebook.",
+      }
+    );
   }
 
   // ========================================
@@ -770,10 +823,14 @@ async function handleRunCode(req, res) {
       framework
     )
   ) {
-    return sendJson(res, 400, {
-      error:
-        "Unsupported framework. Choose Qiskit, PennyLane, or Cirq.",
-    });
+    return sendJson(
+      res,
+      400,
+      {
+        error:
+          "Unsupported framework. Choose Qiskit, PennyLane, or Cirq.",
+      }
+    );
   }
 
   // ========================================
@@ -785,47 +842,54 @@ async function handleRunCode(req, res) {
   ) {
     if (
       !notebook ||
-      typeof notebook !== "object"
+      typeof notebook !==
+        "object"
     ) {
-      return sendJson(res, 400, {
-        error:
-          "Notebook data is required.",
-      });
+      return sendJson(
+        res,
+        400,
+        {
+          error:
+            "Notebook data is required.",
+        }
+      );
     }
-
-    // ========================================
-    // Validate notebook cells
-    // ========================================
 
     if (
       !Array.isArray(
         notebook.cells
       )
     ) {
-      return sendJson(res, 400, {
-        error:
-          "Notebook cells are required.",
-      });
+      return sendJson(
+        res,
+        400,
+        {
+          error:
+            "Notebook cells are required.",
+        }
+      );
     }
 
-    // Limit number of cells
     if (
-      notebook.cells.length > 50
+      notebook.cells.length >
+      50
     ) {
-      return sendJson(res, 400, {
-        error:
-          "Notebook cannot contain more than 50 cells.",
-      });
+      return sendJson(
+        res,
+        400,
+        {
+          error:
+            "Notebook cannot contain more than 50 cells.",
+        }
+      );
     }
-
-    // ========================================
-    // Create temporary directory
-    // ========================================
 
     const tempDir =
       path.join(
         os.tmpdir(),
-        `qubit-lab-notebook-${Date.now()}`
+        `qubit-lab-notebook-${Date.now()}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`
       );
 
     try {
@@ -837,16 +901,8 @@ async function handleRunCode(req, res) {
       );
 
       console.log(
-        `Running ${framework} Jupyter notebook...`
+        `Running ${framework} Jupyter notebook inside Docker...`
       );
-
-      console.log(
-        `Notebook directory: ${tempDir}`
-      );
-
-      // ========================================
-      // Execute notebook
-      // ========================================
 
       const result =
         await executeNotebook(
@@ -855,10 +911,7 @@ async function handleRunCode(req, res) {
           framework
         );
 
-      // ========================================
       // Cleanup
-      // ========================================
-
       try {
         fs.rmSync(
           tempDir,
@@ -867,16 +920,14 @@ async function handleRunCode(req, res) {
             force: true,
           }
         );
-      } catch (cleanupError) {
+      } catch (
+        cleanupError
+      ) {
         console.error(
           "Notebook cleanup error:",
           cleanupError
         );
       }
-
-      // ========================================
-      // Success
-      // ========================================
 
       return sendJson(
         res,
@@ -895,13 +946,12 @@ async function handleRunCode(req, res) {
 
           fileType:
             "notebook",
+
+          execution:
+            "docker",
         }
       );
     } catch (error) {
-      // ========================================
-      // Cleanup after failure
-      // ========================================
-
       try {
         fs.rmSync(
           tempDir,
@@ -930,6 +980,9 @@ async function handleRunCode(req, res) {
 
           fileType:
             "notebook",
+
+          execution:
+            "docker",
         }
       );
     }
@@ -940,13 +993,18 @@ async function handleRunCode(req, res) {
   // ========================================
 
   if (
-    typeof code !== "string" ||
+    typeof code !==
+      "string" ||
     !code.trim()
   ) {
-    return sendJson(res, 400, {
-      error:
-        "Code is required.",
-    });
+    return sendJson(
+      res,
+      400,
+      {
+        error:
+          "Code is required.",
+      }
+    );
   }
 
   // ========================================
@@ -956,7 +1014,9 @@ async function handleRunCode(req, res) {
   const tempDir =
     path.join(
       os.tmpdir(),
-      `qubit-lab-${Date.now()}`
+      `qubit-lab-${Date.now()}-${Math.random()
+        .toString(36)
+        .slice(2, 8)}`
     );
 
   const filePath =
@@ -980,137 +1040,74 @@ async function handleRunCode(req, res) {
     );
 
     console.log(
-      `Running ${framework} Python program...`
-    );
-
-    console.log(
-      `Python file: ${filePath}`
+      `Running ${framework} Python program inside Docker...`
     );
 
     // ========================================
-    // Execute Python
+    // Execute inside Docker
     // ========================================
 
-    execFile(
-      "python",
-      [
-        "-X",
-        "utf8",
-        filePath,
-      ],
+    const {
+      stdout,
+      stderr,
+    } =
+      await runDockerPython(
+        tempDir,
+        [
+          "/workspace/main.py",
+        ],
+        DOCKER_TIMEOUT
+      );
+
+    // ========================================
+    // Cleanup
+    // ========================================
+
+    try {
+      fs.rmSync(
+        tempDir,
+        {
+          recursive: true,
+          force: true,
+        }
+      );
+    } catch (
+      cleanupError
+    ) {
+      console.error(
+        "Temporary file cleanup error:",
+        cleanupError
+      );
+    }
+
+    // ========================================
+    // Success
+    // ========================================
+
+    return sendJson(
+      res,
+      200,
       {
-        timeout: 15000,
+        output:
+          stdout?.trim() ||
+          "Program executed successfully.",
 
-        maxBuffer:
-          1024 * 1024,
+        warning:
+          stderr?.trim() ||
+          "",
 
-        windowsHide: true,
+        framework,
 
-        // Force UTF-8 on Windows
-        env: {
-          ...process.env,
+        fileType:
+          "python",
 
-          PYTHONIOENCODING:
-            "utf-8",
-
-          PYTHONUTF8:
-            "1",
-        },
-      },
-
-      (
-        error,
-        stdout,
-        stderr
-      ) => {
-        // ========================================
-        // Clean temporary files
-        // ========================================
-
-        try {
-          fs.rmSync(
-            tempDir,
-            {
-              recursive: true,
-              force: true,
-            }
-          );
-        } catch (
-          cleanupError
-        ) {
-          console.error(
-            "Temporary file cleanup error:",
-            cleanupError
-          );
-        }
-
-        // ========================================
-        // Python execution failed
-        // ========================================
-
-        if (error) {
-          console.error(
-            `${framework} execution error:`,
-            error
-          );
-
-          console.error(
-            "Python stderr:",
-            stderr
-          );
-
-          return sendJson(
-            res,
-            400,
-            {
-              error:
-                stderr?.trim() ||
-                error.message ||
-                "Python execution failed.",
-
-              output:
-                stdout?.trim() ||
-                "",
-
-              framework,
-
-              fileType:
-                "python",
-            }
-          );
-        }
-
-        // ========================================
-        // Python execution successful
-        // ========================================
-
-        return sendJson(
-          res,
-          200,
-          {
-            output:
-              stdout?.trim() ||
-              "Program executed successfully.",
-
-            // stderr can contain warnings.
-            // It is NOT treated as an error
-            // when Python exits successfully.
-
-            warning:
-              stderr?.trim() ||
-              "",
-
-            framework,
-
-            fileType:
-              "python",
-          }
-        );
+        execution:
+          "docker",
       }
     );
   } catch (error) {
     // ========================================
-    // Cleanup after setup failure
+    // Cleanup after failure
     // ========================================
 
     try {
@@ -1124,18 +1121,30 @@ async function handleRunCode(req, res) {
     } catch {}
 
     console.error(
-      "Code execution setup error:",
+      `${framework} Docker execution error:`,
       error
     );
 
     return sendJson(
       res,
-      500,
+      400,
       {
         error:
-          error instanceof Error
-            ? error.message
-            : "Unable to execute Python code.",
+          error?.stderr?.trim() ||
+          error?.message ||
+          "Python execution failed.",
+
+        output:
+          error?.stdout?.trim() ||
+          "",
+
+        framework,
+
+        fileType:
+          "python",
+
+        execution:
+          "docker",
       }
     );
   }
@@ -1147,7 +1156,10 @@ async function handleRunCode(req, res) {
 
 const server =
   http.createServer(
-    async (req, res) => {
+    async (
+      req,
+      res
+    ) => {
       try {
         setCorsHeaders(res);
 
@@ -1159,7 +1171,10 @@ const server =
           req.method ===
           "OPTIONS"
         ) {
-          res.writeHead(204);
+          res.writeHead(
+            204
+          );
+
           return res.end();
         }
 
@@ -1179,7 +1194,8 @@ const server =
         if (
           url.pathname ===
             "/api/run" &&
-          req.method === "POST"
+          req.method ===
+            "POST"
         ) {
           return await handleRunCode(
             req,
@@ -1194,7 +1210,8 @@ const server =
         if (
           url.pathname ===
             "/api/ai/chat" &&
-          req.method === "POST"
+          req.method ===
+            "POST"
         ) {
           return await handleChat(
             req,
@@ -1209,7 +1226,8 @@ const server =
         if (
           url.pathname ===
             "/api/ai/analyze-circuit" &&
-          req.method === "POST"
+          req.method ===
+            "POST"
         ) {
           return await handleAnalyze(
             req,
@@ -1224,7 +1242,8 @@ const server =
         if (
           url.pathname ===
             "/api/ai/optimize-circuit" &&
-          req.method === "POST"
+          req.method ===
+            "POST"
         ) {
           return await handleOptimize(
             req,
@@ -1239,7 +1258,8 @@ const server =
         if (
           url.pathname ===
             "/api/ai/learning-path" &&
-          req.method === "POST"
+          req.method ===
+            "POST"
         ) {
           return await handleLearningPath(
             req,
@@ -1259,13 +1279,17 @@ const server =
               "Not found.",
           }
         );
-      } catch (error) {
+      } catch (
+        error
+      ) {
         console.error(
           "Server error:",
           error
         );
 
-        if (!res.headersSent) {
+        if (
+          !res.headersSent
+        ) {
           return sendJson(
             res,
             500,

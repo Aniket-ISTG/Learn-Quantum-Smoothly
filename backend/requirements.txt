@@ -1,0 +1,6 @@
+qiskit
+pennylane
+cirq
+jupyter
+nbconvert
+ipykernel
