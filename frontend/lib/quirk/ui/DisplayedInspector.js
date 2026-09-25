@@ -320,9 +320,9 @@ class DisplayedInspector {
     }
 
     _drawHint(painter) {
-        this._drawHint_dragGatesOntoCircuit(painter);
-        this._drawHint_watchOutputsChange(painter);
-        this._drawHint_useControls(painter);
+        //this._drawHint_dragGatesOntoCircuit(painter);
+        //this._drawHint_watchOutputsChange(painter);
+        //this._drawHint_useControls(painter);
     }
 
     /**
