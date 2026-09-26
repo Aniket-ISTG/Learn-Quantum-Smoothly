@@ -11,18 +11,21 @@ const closeImports = () => importsIsVisible.set(false);
  * @param {!Observable.<!boolean>} obsIsAnyOverlayShowing
  */
 function initImports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
+    const error_message = document.getElementById("import-error-message");
+
+    const setError = (message) => {
+        if (!error_message) return;
+        error_message.textContent = message || "Import failed. Check the format and input.";
+        error_message.style.display = "block";
+    };
+
     const importCircuit = () => {
         // Due to horrors of Grunt, I have decided to include QuantumCircuit
         // in an external script tag. This is horrible, sorry. However, it works.
         const circuit = new QuantumCircuit();
         const type = document.getElementById("import-format-select").value;
         const input = document.getElementById("import-circuit-textarea").value;
-        const error_message = document.getElementById("import-error-message");
 
-        const setError = (message) => {
-            error_message.textContent = message || "Import failed. Check the format and input.";
-            error_message.style.display = "block";
-        };
 
         if (!input || !input.trim()) {
             setError("Please paste a circuit before importing.");
@@ -101,7 +104,10 @@ function initImports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
         obsImportsIsShowing.subscribe(showing => {
             importDiv.style.display = showing ? 'block' : 'none';
             inputField.value = ""; // clear value on show & hide
-            error_message.style.display = "none";
+            if (error_message) {
+                error_message.style.display = "none";
+                error_message.textContent = "";
+            }
             if (showing) {
                 document.getElementById('export-link-copy-button').focus();
             }
