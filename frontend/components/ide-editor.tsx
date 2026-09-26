@@ -22,19 +22,19 @@ export default function CodeEditor({
   onChange,
 }: CodeEditorProps) {
   return (
-    <div className="min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-[#1e1e1e]">
+    <div className="min-h-[420px] overflow-hidden rounded-xl border border-slate-700 bg-[#1e1e1e] shadow-[inset_0_1px_0_rgba(255,255,255,0.06)] shadow-slate-950/30 transition duration-200 hover:border-cyan-400/60">
       <Editor
         height="420px"
         language={languageMap[language] ?? "javascript"}
         value={code}
-        theme="vs-dark"
+        theme="vs"
         onChange={(value) => onChange(value ?? "")}
         options={{
           automaticLayout: true,
           minimap: {
-            enabled: true,
+            enabled: false,
           },
-          fontSize: 14,
+          fontSize: 13,
           lineHeight: 22,
           fontFamily: "Fira Code, Consolas, monospace",
           fontLigatures: true,
@@ -50,6 +50,10 @@ export default function CodeEditor({
           },
           suggestOnTriggerCharacters: true,
           quickSuggestions: true,
+          glyphMargin: false,
+          lineNumbersMinChars: 3,
+          renderLineHighlight: "all",
+          roundedSelection: true,
         }}
       />
     </div>

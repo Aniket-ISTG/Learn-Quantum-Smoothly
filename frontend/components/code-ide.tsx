@@ -515,30 +515,39 @@ export default function CodeIDE() {
   }
 
   return (
-    <section className="w-full rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
+    <section className="w-full rounded-[26px] border border-slate-200 bg-white/90 p-3 shadow-[0_16px_52px_rgba(15,23,42,0.08)] ring-1 ring-slate-200/80 backdrop-blur-sm sm:p-4 lg:p-5">
 
       {/* ===================================== */}
       {/* HEADER */}
       {/* ===================================== */}
 
-      <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div className="mb-4 flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
 
         <div className="flex items-center gap-3">
 
-          <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 text-2xl">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-100 to-sky-100 text-xl shadow-sm ring-1 ring-cyan-100">
             ⚛
           </div>
 
           <div>
-            <h2 className="text-xl font-bold text-slate-900">
+            <h2 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">
               Quantum Code Lab
             </h2>
 
-            <p className="text-sm text-slate-500">
+            <p className="text-xs text-slate-500">
               Write and run quantum programs with Python.
             </p>
           </div>
 
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="rounded-full border border-cyan-100 bg-cyan-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-cyan-700">
+            {selectedFramework.label}
+          </div>
+          <div className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+            {fileType === "python" ? "Python" : "Notebook"}
+          </div>
         </div>
 
         {/* ================================= */}
@@ -549,7 +558,7 @@ export default function CodeIDE() {
 
           <label
             htmlFor="file-type-select"
-            className="text-sm font-semibold text-slate-700"
+            className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600"
           >
             File
           </label>
@@ -562,7 +571,7 @@ export default function CodeIDE() {
                 event.target.value as FileType
               )
             }
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-medium text-slate-800 outline-none transition hover:border-cyan-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
           >
             <option value="python">
               Python (.py)
@@ -575,7 +584,7 @@ export default function CodeIDE() {
 
           <label
             htmlFor="framework-select"
-            className="text-sm font-semibold text-slate-700"
+            className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600"
           >
             Framework
           </label>
@@ -588,7 +597,7 @@ export default function CodeIDE() {
                 event.target.value as Framework
               )
             }
-            className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
+            className="rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-medium text-slate-800 outline-none transition hover:border-cyan-300 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-100"
           >
             {frameworks.map((item) => (
               <option
@@ -603,7 +612,7 @@ export default function CodeIDE() {
           <button
             type="button"
             onClick={handleReset}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+            className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700 transition hover:border-slate-300 hover:bg-slate-100 active:scale-[0.98]"
           >
             Reset
           </button>
@@ -613,7 +622,7 @@ export default function CodeIDE() {
               type="button"
               onClick={handleRunCode}
               disabled={isRunning}
-              className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-sm font-bold text-white shadow-[0_8px_20px_rgba(16,185,129,0.28)] transition hover:translate-y-[-1px] hover:shadow-[0_12px_24px_rgba(16,185,129,0.35)] disabled:cursor-not-allowed disabled:opacity-60"
             >
               {isRunning
                 ? "Running..."
@@ -623,7 +632,7 @@ export default function CodeIDE() {
             <button
               type="button"
               onClick={handleRunAllCells}
-              className="rounded-lg bg-emerald-500 px-5 py-2 text-sm font-bold text-white transition hover:bg-emerald-600"
+              className="rounded-lg bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-sm font-bold text-white shadow-[0_8px_20px_rgba(16,185,129,0.28)] transition hover:translate-y-[-1px] hover:shadow-[0_12px_24px_rgba(16,185,129,0.35)]"
             >
               ▶ Run All
             </button>
@@ -636,17 +645,17 @@ export default function CodeIDE() {
       {/* FILE INFORMATION */}
       {/* ===================================== */}
 
-      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5">
 
         <div className="flex items-center gap-2 text-sm text-slate-700">
 
-          <span>
+          <span className="flex h-7 w-7 items-center justify-center rounded-md bg-white text-base shadow-sm ring-1 ring-slate-200">
             {fileType === "python"
               ? "📄"
               : "📓"}
           </span>
 
-          <span className="font-mono">
+          <span className="font-mono text-sm text-slate-700">
             {fileType === "python"
               ? "main.py"
               : "main.ipynb"}
@@ -654,9 +663,14 @@ export default function CodeIDE() {
 
         </div>
 
-        <span className="text-xs text-slate-500">
-          {selectedFramework.label} • Python
-        </span>
+        <div className="flex items-center gap-2 text-[11px] font-medium text-slate-500">
+          <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200">
+            {selectedFramework.label}
+          </span>
+          <span className="rounded-full bg-white px-2 py-1 ring-1 ring-slate-200">
+            Ready
+          </span>
+        </div>
 
       </div>
 
@@ -674,14 +688,14 @@ export default function CodeIDE() {
 
           {/* Output */}
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
 
             <div>
-              <h3 className="text-lg font-bold text-slate-900">
+              <h3 className="text-base font-bold text-slate-900">
                 Program Output
               </h3>
 
-              <p className="text-sm text-slate-500">
+              <p className="text-xs text-slate-500">
                 Output and errors from your quantum program appear here.
               </p>
             </div>
@@ -689,14 +703,14 @@ export default function CodeIDE() {
             <button
               type="button"
               onClick={handleClearOutput}
-              className="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+              className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-100"
             >
               Clear output
             </button>
 
           </div>
 
-          <div className="mt-3 min-h-[160px] overflow-auto rounded-xl border border-slate-700 bg-[#0f172a] p-4 font-mono text-sm">
+          <div className="mt-2 min-h-[150px] overflow-auto rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-sm shadow-inner shadow-slate-200/70">
 
             {!output &&
               !error &&
@@ -709,7 +723,7 @@ export default function CodeIDE() {
               )}
 
             {isRunning && (
-              <p className="text-yellow-300">
+              <p className="text-amber-700">
                 Running your{" "}
                 {selectedFramework.label}{" "}
                 program...
@@ -717,13 +731,13 @@ export default function CodeIDE() {
             )}
 
             {output && (
-              <pre className="whitespace-pre-wrap break-words text-emerald-300">
+              <pre className="whitespace-pre-wrap break-words text-emerald-700">
                 {output}
               </pre>
             )}
 
             {error && (
-              <pre className="mt-2 whitespace-pre-wrap break-words text-red-300">
+              <pre className="mt-2 whitespace-pre-wrap break-words text-red-600">
                 {error}
               </pre>
             )}
@@ -747,11 +761,11 @@ export default function CodeIDE() {
 
               {/* Cell header */}
 
-              <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-2">
+              <div className="flex items-center justify-between border-b border-slate-200 bg-gradient-to-r from-slate-50 to-slate-100 px-3 py-2">
 
                 <div className="flex items-center gap-3">
 
-                  <span className="font-mono text-xs font-bold text-slate-500">
+                  <span className="font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-slate-500">
                     In [{index + 1}]
                   </span>
 
@@ -768,7 +782,7 @@ export default function CodeIDE() {
                       cell.isRunning ||
                       !cell.code.trim()
                     }
-                    className="rounded-md bg-emerald-500 px-3 py-1.5 text-xs font-bold text-white transition hover:bg-emerald-600 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-md bg-gradient-to-r from-emerald-500 to-teal-500 px-3 py-1.5 text-[11px] font-bold text-white shadow-sm transition hover:translate-y-[-1px] hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {cell.isRunning
                       ? "Running..."
@@ -781,7 +795,7 @@ export default function CodeIDE() {
                       deleteCell(cell.id)
                     }
                     disabled={cells.length === 1}
-                    className="rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 transition hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                    className="rounded-md border border-slate-200 bg-white px-3 py-1.5 text-[11px] font-medium text-slate-600 transition hover:border-red-200 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-40"
                   >
                     Delete
                   </button>
@@ -791,7 +805,7 @@ export default function CodeIDE() {
 
               {/* Monaco cell */}
 
-              <div className="p-3">
+              <div className="p-2.5">
 
                 <CodeEditor
                   code={cell.code}
@@ -811,26 +825,26 @@ export default function CodeIDE() {
               {(cell.output ||
                 cell.error ||
                 cell.isRunning) && (
-                <div className="border-t border-slate-200 bg-slate-950 p-4">
+                <div className="border-t border-slate-200 bg-slate-50 p-4">
 
-                  <div className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-400">
+                  <div className="mb-2 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500">
                     Out [{index + 1}]
                   </div>
 
                   {cell.isRunning && (
-                    <p className="text-yellow-300">
+                    <p className="text-amber-700">
                       Running cell...
                     </p>
                   )}
 
                   {cell.output && (
-                    <pre className="whitespace-pre-wrap break-words font-mono text-sm text-emerald-300">
+                    <pre className="whitespace-pre-wrap break-words font-mono text-sm text-emerald-700">
                       {cell.output}
                     </pre>
                   )}
 
                   {cell.error && (
-                    <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-sm text-red-300">
+                    <pre className="mt-2 whitespace-pre-wrap break-words font-mono text-sm text-red-600">
                       {cell.error}
                     </pre>
                   )}
@@ -846,7 +860,7 @@ export default function CodeIDE() {
           <button
             type="button"
             onClick={addCell}
-            className="w-full rounded-xl border-2 border-dashed border-slate-300 px-4 py-4 text-sm font-semibold text-slate-600 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700"
+            className="w-full rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-600 transition hover:border-cyan-400 hover:bg-cyan-50 hover:text-cyan-700 active:scale-[0.995]"
           >
             + Add Code Cell
           </button>
@@ -876,16 +890,17 @@ export default function CodeIDE() {
       {/* FOOTER */}
       {/* ===================================== */}
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500">
+      <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-3 text-[11px] text-slate-500">
 
-        <span>
+        <span className="flex items-center gap-2">
+          <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
           Backend:{" "}
-          <span className="font-mono">
+          <span className="font-mono text-slate-600">
             localhost:4000/api/run
           </span>
         </span>
 
-        <span>
+        <span className="rounded-full border border-slate-200 bg-slate-50 px-2 py-1">
           Python • Qiskit • PennyLane • Cirq • Jupyter
         </span>
 
