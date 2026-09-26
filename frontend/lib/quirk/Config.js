@@ -98,24 +98,25 @@ Config.SEMI_STABLE_RANDOM_VALUE_LIFETIME_MILLIS = 300;
 
 Config.IGNORED_WEBGL_INFO_TERMS = [];
 
-// Colored version color codes.
-Config.ROTATION_AND_TURNS_COLOR = isDarkMode ? '#EFAA92' : '#EFDC92';
-Config.ROTATION_AND_TURNS_HIGHLIGHT = isDarkMode ? '#cf9480' : '#edd265';
-Config.LOGICAL_AND_PARITY_COLOR = isDarkMode ? '#F8AB78' : '#F8AB78';
-Config.LOGICAL_AND_PARITY_HIGHLIGHT = isDarkMode ? '#cb8d64' : '#db996e';
-Config.MATH_COLOR = isDarkMode ? '#C681AC' : '#B681C6';
-Config.MATH_HIGHLIGHT = isDarkMode ? '#a86f93' : '#9d71ab';
-Config.VISUALIZATION_AND_PROBES_COLOR = isDarkMode ? '#81D4B0' : '#A8D481';
-Config.VISUALIZATION_AND_PROBES_HIGHLIGHT = isDarkMode ? '#69ad90' : '#8db26d';
-Config.SAMPLING_AND_PROBABILITY_COLOR = isDarkMode ? '#8ACFF8' : '#899BF7';
-Config.SAMPLING_AND_PROBABILITY_HIGHLIGHT = isDarkMode ? '#74afd1' : '#7786d4';
-Config.OTHER_COLOR = isDarkMode ? '#E3E1E1' : '#E1E0DF';
-Config.OTHER_HIGHLIGHT = isDarkMode ? '#bfbdbd' : '#c2c0bf';
+// Modern warm palette for the live circuit editor. Blue is intentionally avoided here to keep the
+// simulator in the app's orange/amber aesthetic while still making each gate category distinct.
+Config.ROTATION_AND_TURNS_COLOR = isDarkMode ? '#F59E0B' : '#FBBF24';
+Config.ROTATION_AND_TURNS_HIGHLIGHT = isDarkMode ? '#D97706' : '#F59E0B';
+Config.LOGICAL_AND_PARITY_COLOR = isDarkMode ? '#FB7185' : '#F97316';
+Config.LOGICAL_AND_PARITY_HIGHLIGHT = isDarkMode ? '#E11D48' : '#EA580C';
+Config.MATH_COLOR = isDarkMode ? '#A78BFA' : '#8B5CF6';
+Config.MATH_HIGHLIGHT = isDarkMode ? '#7C3AED' : '#7C3AED';
+Config.VISUALIZATION_AND_PROBES_COLOR = isDarkMode ? '#34D399' : '#10B981';
+Config.VISUALIZATION_AND_PROBES_HIGHLIGHT = isDarkMode ? '#059669' : '#059669';
+Config.SAMPLING_AND_PROBABILITY_COLOR = isDarkMode ? '#F59E0B' : '#F59E0B';
+Config.SAMPLING_AND_PROBABILITY_HIGHLIGHT = isDarkMode ? '#EA580C' : '#EA580C';
+Config.OTHER_COLOR = isDarkMode ? '#E2E8F0' : '#E2E8F0';
+Config.OTHER_HIGHLIGHT = isDarkMode ? '#CBD5E1' : '#CBD5E1';
 Config.DARK_BG = '#6d6d6d';
 Config.DARK_BG_CIRCUIT = '#6d6d6d';
 Config.DARK_BG_TOOLBOX = '#5D5B5B';
 Config.RED = '#762020';
-Config.YELLOW = '#efdd92';
-Config.YELLOW_HIGHLIGHT = '#edd265';
+Config.YELLOW = '#FDE68A';
+Config.YELLOW_HIGHLIGHT = '#FACC15';
 
 export {Config}

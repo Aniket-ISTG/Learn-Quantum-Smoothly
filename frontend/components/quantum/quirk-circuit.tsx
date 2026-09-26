@@ -190,9 +190,16 @@ export function QuirkCircuit({
       menu.style.display = shouldOpen ? "block" : "none";
       if (shouldOpen) {
         const rect = button.getBoundingClientRect();
-        menu.style.position = "absolute";
-        menu.style.top = `${rect.bottom + 6}px`;
-        menu.style.left = `${rect.left}px`;
+        const menuWidth = menu.offsetWidth || 180;
+        const menuHeight = menu.offsetHeight || 180;
+        const left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
+        const top = Math.min(rect.bottom + 8, window.innerHeight - menuHeight - 12);
+
+        menu.style.position = "fixed";
+        menu.style.top = `${Math.max(12, top)}px`;
+        menu.style.left = `${Math.max(12, left)}px`;
+        menu.style.zIndex = "99999";
+        menu.style.pointerEvents = "auto";
       }
     };
 
@@ -269,7 +276,13 @@ export function QuirkCircuit({
   }, [initialCircuit, onCircuitChange, reloadKey]);
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col w-full min-w-0 max-w-full overflow-visible bg-white select-none ${className}`}>
+    <div
+      ref={containerRef}
+      className={`relative flex w-full min-w-0 max-w-full flex-col overflow-visible select-none bg-[radial-gradient(circle_at_top,_rgba(251,146,60,0.12),_transparent_28%),linear-gradient(180deg,_#fffdfc_0%,_#ffffff_35%,_#f8fbff_100%)] ${className}`}
+      style={{
+        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+      }}
+    >
       {/* Loading state indicator */}
       {!isLoaded && !error && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
@@ -288,13 +301,17 @@ export function QuirkCircuit({
       )}
 
       {/* Main Quirk-E Top Navigation & Action Controls */}
-      <div id="inspectorDiv" style={{ display: "none", pointerEvents: isAnyPanelOpen ? "none" : "auto" }} className="relative z-20 w-full border-b border-slate-200 bg-slate-50 px-4 py-2.5">
+      <div
+        id="inspectorDiv"
+        style={{ display: "none", pointerEvents: isAnyPanelOpen ? "none" : "auto" }}
+        className="relative z-20 w-full border-b border-orange-100 bg-[linear-gradient(90deg,_rgba(255,247,237,0.96),_rgba(255,255,255,0.98),_rgba(239,246,255,0.9))] px-4 py-2.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.8)]"
+      >
         <div id="menu-row" className="relative z-30 flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Left Group: Circuit Operations */}
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               id="circuits-button"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white font-medium shadow-sm transition"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-orange-500 to-amber-500 px-3 py-1.5 font-medium text-white shadow-[0_6px_16px_rgba(249,115,22,0.22)] transition hover:brightness-105"
               title="Circuit Gallery & Examples"
             >
               <i className="fa-solid fa-list text-[11px]" />
@@ -343,16 +360,16 @@ export function QuirkCircuit({
             {/* Inspector Toggle */}
             <button
               id="enable-inspector-button"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition font-medium"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-orange-200 bg-gradient-to-r from-orange-50 to-amber-50 px-2.5 py-1.5 font-medium text-orange-700 shadow-sm transition hover:border-orange-300 hover:bg-orange-100/70"
               title="Step-by-step circuit inspector"
             >
               <i className="fa-solid fa-magnifying-glass text-[11px]" />
               <span>Inspector</span>
             </button>
 
-            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm">
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white/90 px-2.5 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm ring-1 ring-slate-100">
               <span>Advance Gates</span>
-              <span className="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200 transition-colors">
+              <span className="relative inline-flex h-5 w-9 items-center rounded-full bg-gradient-to-r from-orange-100 to-amber-100 transition-colors">
                 <input
                   id="show-all-gates-toggle"
                   type="checkbox"
@@ -435,8 +452,8 @@ export function QuirkCircuit({
               </button>
               <div
                 id="download-options-menu"
-                style={{ display: "none" }}
-                className="absolute right-0 top-full mt-1.5 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
+                style={{ display: "none", position: "fixed", zIndex: 99999 }}
+                className="min-w-[150px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
                 onClick={(event) => {
                   const target = event.target as HTMLElement;
                   if (target.closest("button")) {
@@ -470,10 +487,15 @@ export function QuirkCircuit({
       <div
         id="canvasDiv"
         tabIndex={0}
-        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white focus:outline-none min-h-[560px]"
-        style={{ position: "relative", pointerEvents: isAnyPanelOpen ? "none" : "auto" }}
+        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-[linear-gradient(180deg,_rgba(255,255,255,1)_0%,_rgba(247,250,252,0.95)_100%)] focus:outline-none min-h-[560px]"
+        style={{
+          position: "relative",
+          pointerEvents: isAnyPanelOpen ? "none" : "auto",
+          boxShadow: "inset 0 1px 0 rgba(255,255,255,0.9)",
+          backgroundImage: "radial-gradient(circle at 25% 20%, rgba(251,146,60,0.08), transparent 18%), radial-gradient(circle at 70% 10%, rgba(59,130,246,0.06), transparent 22%), linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(247,250,252,0.96) 100%)",
+        }}
       >
-        <canvas id="drawCanvas" className="block outline-none" />
+        <canvas id="drawCanvas" className="block outline-none" style={{ filter: "drop-shadow(0 10px 20px rgba(148, 163, 184, 0.08))" }} />
 
         {/* Right-click Context Menu on Gates */}
         <div id="gate-context-menu" style={{ position: "absolute", display: "none", zIndex: 1000 }}>

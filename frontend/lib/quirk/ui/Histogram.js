@@ -132,9 +132,10 @@ class Histogram {
 
             const isColored = localStorage.getItem('colored_ui') === 'true';
             const isYellowMode = localStorage.getItem('yellow_mode') === 'true';
-            let usedColor = Config.SAMPLING_AND_PROBABILITY_COLOR;
-            let usedHighLight = Config.SAMPLING_AND_PROBABILITY_HIGHLIGHT;
-            if(isColored && isYellowMode) {
+            const palette = ['#F59E0B', '#FB7185', '#8B5CF6', '#10B981', '#F97316', '#A78BFA', '#FACC15', '#34D399'];
+            let usedColor = palette[index % palette.length];
+            let usedHighLight = palette[(index + 1) % palette.length];
+            if (isColored && isYellowMode) {
                 usedColor = Config.YELLOW;
                 usedHighLight = Config.YELLOW_HIGHLIGHT;
             }
