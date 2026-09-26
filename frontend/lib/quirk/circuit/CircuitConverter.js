@@ -298,6 +298,7 @@ function modernizeQiskitExport(qiskitCode, options = {}) {
     }
 
     output.push("");
+    output.push("qc.measure_all()");
 
     // Operations
     for (const operation of operations) {
