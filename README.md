@@ -1,98 +1,88 @@
-# AI-Based QC Learning Platform
+# AI-Based Quantum Computing Learning Platform
 
-This project has two runtime parts:
+An interactive quantum computing learning platform designed to help beginners learn quantum computing through structured lessons, interactive simulations, coding exercises, and an AI tutor.
 
-- Frontend: Next.js app for the learner UI
-- Backend: local AI service that talks to model and powers the chat/analyze/optimize features
+## Project Architecture
+
+The project has two main runtime parts:
+
+- **Frontend:** Next.js application for the learner UI
+- **Backend:** Node.js API service that handles AI features and Docker-based quantum code execution
+
+The backend uses **Docker** to provide an isolated Python environment for executing quantum computing programs.
+
+---
+
+## Features
+
+- Interactive quantum computing lessons
+- Quantum circuit playground
+- Qiskit support
+- Qiskit Aer simulator support
+- PennyLane support
+- Cirq support
+- Python code execution
+- Jupyter Notebook (`.ipynb`) execution
+- AI quantum tutor
+- Circuit analysis
+- Circuit optimization
+- AI-generated learning paths
+- Docker-isolated code execution
+
+---
+
+## Technology Stack
+
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+### Backend
+
+- Node.js
+- JavaScript
+- HTTP API
+- Groq API
+
+### Quantum Computing
+
+- Qiskit
+- Qiskit Aer
+- PennyLane
+- Cirq
+
+### Code Execution
+
+- Docker
+- Python 3.11
+- Jupyter
+- nbconvert
+- ipykernel
+
+---
 
 ## Prerequisites
 
+Before running the project locally, make sure you have:
+
 - Node.js 20+
 - npm
-- A valid Grok API key in the backend environment file
+- Docker Desktop
+- WSL 2
+- Virtualization enabled
+- A valid Groq API key
 
-## 1) Install dependencies
+> Docker Desktop must be running when using the Quantum Code Lab locally.
 
-From the repository root:
+---
 
-```bash
-cd frontend && npm install
-cd ../backend && npm install
-```
+# Installation
 
-## 2) Configure the API key
-
-Copy the example env file:
+## 1. Clone the Repository
 
 ```bash
-cd backend
-cp .env.example .env.local
-```
-
-Then edit `backend/.env.local` and set your actual key:
-
-```env
-PORT=4000
-```
-
-## 3) Start the backend AI service
-
-In one terminal:
-
-```bash
-cd backend
-node server.js
-```
-
-You should see:
-
-```bash
-AI backend running on http://localhost:4000
-```
-
-## 4) Start the frontend
-
-In a second terminal:
-
-```bash
-cd frontend
-npm run dev
-```
-
-Then open:
-
-```text
-http://localhost:3000
-```
-
-## 5) Optional production build
-
-Frontend build:
-
-```bash
-cd frontend
-npm run build
-```
-
-Backend has no build step right now; it runs directly with Node.
-
-## Notes
-
-- The frontend chat panel calls the backend at `http://localhost:4000`.
-- The backend is the source of truth for AI logic.
-- If the backend is not running, the AI features will fail.
-
-## Project layout
-
-```text
-backend/
-  ai/
-  server.js
-  .env.example
-  .env.local
-frontend/
-  app/
-  components/
-  public/
-  package.json
-```
+git clone <YOUR_REPOSITORY_URL>
+cd Learn-Quantum-Smoothly
