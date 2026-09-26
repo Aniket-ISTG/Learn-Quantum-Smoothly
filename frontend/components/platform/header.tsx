@@ -6,11 +6,11 @@ import { useRouter, usePathname } from "next/navigation";
 import { supabase } from "@/lib/quantum/supabase";
 
 const navLinks = [
+  { href: "/home", label: "Home" },
   { href: "/learn", label: "Learn" },
   { href: "/playground", label: "Playground" },
-  { href: "/#simulator", label: "Simulator" },
-  { href: "/#progress", label: "Progress" },
   { href: "/ide", label: "IDE" },
+  { href: "/progress", label: "Progress" },
 ];
 
 export function PlatformHeader() {
@@ -38,7 +38,7 @@ export function PlatformHeader() {
     <header className="sticky top-0 z-50 border-b border-[#e8d9c8] bg-[rgba(250,245,238,0.85)] px-5 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between">
         <Link
-          href="/"
+          href="/home"
           className="flex items-center gap-2 text-[15px] font-bold tracking-tight text-[#1f1b17]"
         >
           <span className="grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br from-[#d78d5f] via-[#b8643e] to-[#915a48] text-lg text-white shadow-sm">
@@ -50,9 +50,11 @@ export function PlatformHeader() {
         <nav className="hidden items-center gap-6 text-sm text-[#584b41] md:flex">
           {navLinks.map(({ href, label }) => {
             const active =
-              href === "/learn"
-                ? pathname.startsWith("/learn")
-                : pathname === href || (href.startsWith("/#") && pathname === "/");
+              href === "/home"
+                ? pathname === "/home" || pathname === "/"
+                : href === "/learn"
+                  ? pathname.startsWith("/learn")
+                  : pathname === href;
             return (
               <Link
                 key={href}

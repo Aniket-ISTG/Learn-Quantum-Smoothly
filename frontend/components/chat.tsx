@@ -288,14 +288,14 @@ export default function Chat() {
           default={{
             x:
               typeof window !== "undefined"
-                ? window.innerWidth - 405
+                ? Math.max(window.innerWidth - 390, 20)
                 : 20,
             y:
               typeof window !== "undefined"
-                ? window.innerHeight - 675
+                ? 72
                 : 20,
-            width: 380,
-            height: 600,
+            width: 400,
+            height: 900,
           }}
           minWidth={300}
           minHeight={400}

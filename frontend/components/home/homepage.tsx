@@ -258,12 +258,6 @@ export function Homepage() {
                   <div className="mt-0.5 text-xs text-slate-500">{label}</div>
                 </div>
               ))}
-              <div>
-                <div className="font-mono text-xl font-bold text-cyan-600">
-                  {overallPercent}%
-                </div>
-                <div className="mt-0.5 text-xs text-slate-500">your progress</div>
-              </div>
             </div>
           </div>
 
@@ -528,33 +522,6 @@ export function Homepage() {
         </div>
       </section>
 
-      {/* Simulator */}
-      <section id="simulator" className="px-5 py-16">
-        <div className="mx-auto max-w-7xl">
-          <div className="panel overflow-hidden rounded-3xl border-violet-100">
-            <div className="grid lg:grid-cols-2">
-              <div className="relative flex min-h-[200px] items-center justify-center bg-gradient-to-br from-violet-50 to-blue-50 p-8">
-                <QubitOrb small />
-              </div>
-              <div className="p-8 sm:p-10">
-                <SectionEyebrow>State simulator</SectionEyebrow>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
-                  Inspect quantum states step by step
-                </h2>
-                <p className="mt-3 text-slate-600">
-                  Build a circuit and watch the state vector evolve after every
-                  gate. See amplitudes, probabilities, and the Bloch sphere in
-                  real time.
-                </p>
-                <Link href="/playground" className="btn-secondary mt-6">
-                  Try in playground →
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* AI Tutor */}
       <section id="ai-tutor" className="border-t border-cyan-50 bg-gradient-to-b from-white to-cyan-50/30 px-5 py-16">
         <div className="mx-auto max-w-7xl text-center">
@@ -578,70 +545,6 @@ export function Homepage() {
                 Bottom-right corner · Available now
               </p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Progress */}
-      <section id="progress" className="px-5 py-16">
-        <div className="mx-auto max-w-7xl">
-          <SectionEyebrow>Your progress</SectionEyebrow>
-          <h2 className="mt-2 text-2xl font-semibold text-slate-900 sm:text-3xl">
-            Track your quantum journey
-          </h2>
-
-          <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {[
-              {
-                label: "Lessons completed",
-                value: completedCount,
-                total: quantumLearningPath.length,
-              },
-              {
-                label: "Lessons started",
-                value: progress.started.length,
-                total: allHomepageLessons.length,
-              },
-              {
-                label: "Overall progress",
-                value: `${overallPercent}%`,
-                total: null,
-              },
-            ].map((stat) => (
-              <div key={stat.label} className="panel rounded-2xl p-6">
-                <p className="text-sm text-slate-500">{stat.label}</p>
-                <p className="mt-2 font-mono text-3xl font-bold text-slate-900">
-                  {stat.value}
-                  {stat.total && (
-                    <span className="text-lg text-slate-400">
-                      {" "}
-                      / {stat.total}
-                    </span>
-                  )}
-                </p>
-                {stat.total && (
-                  <div className="mt-3 progress-bar">
-                    <div
-                      className="progress-bar-fill"
-                      style={{
-                        width: `${Math.round((Number(stat.value) / stat.total) * 100)}%`,
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 scroll-path">
-            {quantumLearningPath.map((lesson, i) => (
-              <LessonCard
-                key={`progress-${lesson.id}`}
-                lesson={lesson}
-                state={getLessonState(lesson.id, i, quantumIds)}
-                compact
-              />
-            ))}
           </div>
         </div>
       </section>
