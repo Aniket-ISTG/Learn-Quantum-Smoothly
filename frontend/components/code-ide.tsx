@@ -34,6 +34,11 @@ const frameworks: FrameworkOption[] = [
   },
 ];
 
+
+const API_URL =
+  process.env.NEXT_PUBLIC_AI_BACKEND_URL ??
+  "http://localhost:4000";
+
 const starterCode: Record<Framework, string> = {
   qiskit: `from qiskit import QuantumCircuit
 
@@ -171,7 +176,7 @@ export default function CodeIDE() {
 
     try {
       const response = await fetch(
-        "http://localhost:4000/api/run",
+        `${API_URL}/api/run`,
         {
           method: "POST",
 
@@ -250,7 +255,7 @@ export default function CodeIDE() {
     };
 
     const response = await fetch(
-      "http://localhost:4000/api/run",
+      `${API_URL}/api/run`,
       {
         method: "POST",
 
@@ -896,7 +901,7 @@ export default function CodeIDE() {
           <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.7)]" />
           Backend:{" "}
           <span className="font-mono text-slate-600">
-            localhost:4000/api/run
+            {API_URL}/api/run
           </span>
         </span>
 
