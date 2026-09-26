@@ -6,16 +6,35 @@ export interface QuirkCircuitProps {
   initialCircuit?: string;
   onCircuitChange?: (circuitJson: string) => void;
   className?: string;
+  onAdvancedGatesChanged?: () => void;
+  onReady?: () => void;
 }
 
-export function QuirkCircuit({ initialCircuit, onCircuitChange, className = "" }: QuirkCircuitProps) {
+export function QuirkCircuit({
+  initialCircuit,
+  onCircuitChange,
+  className = "",
+  onAdvancedGatesChanged,
+  onReady,
+}: QuirkCircuitProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [isLoaded, setIsLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvancedGates, setShowAdvancedGates] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0);
+
+  useEffect(() => {
+    const savedValue = localStorage.getItem("quirk_show_all_gates") === "true";
+    setShowAdvancedGates(savedValue);
+  }, []);
 
   useEffect(() => {
     let quirkInstance: any = null;
     let isCancelled = false;
+
+    // Every reload starts from a clean loading state.
+    setIsLoaded(false);
+    setError(null);
 
     // Load FontAwesome for Quirk-E toolbar icons if not already present
     if (!document.getElementById("font-awesome-cdn")) {
@@ -42,6 +61,7 @@ export function QuirkCircuit({ initialCircuit, onCircuitChange, className = "" }
         });
 
         setIsLoaded(true);
+        onReady?.();
       } catch (err: any) {
         console.error("Failed to initialize Quirk-E component:", err);
         setError(err?.message || "Failed to load quantum simulator");
@@ -56,7 +76,7 @@ export function QuirkCircuit({ initialCircuit, onCircuitChange, className = "" }
         quirkInstance.destroy();
       }
     };
-  }, [initialCircuit, onCircuitChange]);
+  }, [initialCircuit, onCircuitChange, reloadKey]);
 
   return (
     <div ref={containerRef} className={`relative flex flex-col w-full min-w-0 max-w-full overflow-hidden bg-white dark:bg-slate-900 select-none ${className}`}>
@@ -65,7 +85,7 @@ export function QuirkCircuit({ initialCircuit, onCircuitChange, className = "" }
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
           <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
-            Initializing Quirk-E quantum simulator...
+            Loading your circuit environment
           </p>
         </div>
       )}
@@ -139,6 +159,29 @@ export function QuirkCircuit({ initialCircuit, onCircuitChange, className = "" }
               <i className="fa-solid fa-magnifying-glass text-[11px]" />
               <span>Inspector</span>
             </button>
+
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+              <span>Advance Gates</span>
+              <span className="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200 transition-colors dark:bg-slate-700">
+                <input
+                  id="show-all-gates-toggle"
+                  type="checkbox"
+                  checked={showAdvancedGates}
+                  onChange={(event) => {
+                    const nextValue = event.target.checked;
+
+                    localStorage.setItem("quirk_show_all_gates", String(nextValue));
+                    setShowAdvancedGates(nextValue);
+                    setIsLoaded(false);
+                    setError(null);
+                    setReloadKey((value) => value + 1);
+                    onAdvancedGatesChanged?.();
+                  }}
+                  className="peer sr-only"
+                />
+                <span className="absolute left-1 h-3 w-3 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+              </span>
+            </label>
           </div>
 
           {/* Right Group: Export, Import, Custom Gates & Settings */}

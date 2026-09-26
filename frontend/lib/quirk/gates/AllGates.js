@@ -190,7 +190,43 @@ Gates.findKnownGateById = (id, customGateSet) => {
 };
 
 /** @type {!Array<!{hint: !string, gates: !Array<undefined|!Gate>}>} */
-Gates.TopToolboxGroups = [
+Gates.BasicTopToolboxGroups = [
+    {
+        hint: "Probes",
+        gates: [
+            MeasurementGate,                  undefined,
+            PostSelectionGates.PostSelectOff, PostSelectionGates.PostSelectOn,
+            Controls.AntiControl,             Controls.Control
+        ]
+    },
+    {
+        hint: "Displays",
+        gates: [
+            SpacerGate, SlicerGate.ofSize(2),
+            DensityMatrixDisplayFamily.ofSize(1), BlochSphereDisplay,
+            ProbabilityDisplayFamily.ofSize(1),   AmplitudeDisplayFamily.ofSize(2)
+        ]
+    },
+    {
+        hint: "Half Turns",
+        gates: [
+            HalfTurnGates.Z, SwapGateHalf,
+            HalfTurnGates.Y, undefined,
+            HalfTurnGates.X, HalfTurnGates.H
+        ]
+    },
+    {
+        hint: "Quarter Turns",
+        gates: [
+            QuarterTurnGates.SqrtZForward, QuarterTurnGates.SqrtZBackward,
+            QuarterTurnGates.SqrtYForward, QuarterTurnGates.SqrtYBackward,
+            QuarterTurnGates.SqrtXForward, QuarterTurnGates.SqrtXBackward
+        ]
+    }
+];
+
+/** @type {!Array<!{hint: !string, gates: !Array<undefined|!Gate>}>} */
+Gates.AllTopToolboxGroups = [
     {
         hint: "Probes",
         gates: [
@@ -351,6 +387,15 @@ Gates.TopToolboxGroups = [
         ]
     },
 ];
+
+Gates.TopToolboxGroups = Gates.AllTopToolboxGroups;
+
+Gates.getTopToolboxGroups = (showAllOverride) => {
+    const showAll = showAllOverride !== undefined
+        ? !!showAllOverride
+        : (typeof localStorage !== 'undefined' && localStorage.getItem('quirk_show_all_gates') === 'true');
+    return showAll ? Gates.AllTopToolboxGroups : Gates.BasicTopToolboxGroups;
+};
 
 /** @type {!Map.<undefined|!string, !Array.<!Gate>>} */
 const INITIAL_STATES_TO_GATES = new Map([

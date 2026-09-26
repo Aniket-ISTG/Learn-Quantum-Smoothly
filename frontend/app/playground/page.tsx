@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useState } from "react";
 import { PlatformHeader } from "@/components/platform/header";
 
 const QuirkCircuit = dynamic(
@@ -20,6 +21,16 @@ const QuirkCircuit = dynamic(
 );
 
 export default function PlaygroundPage() {
+  const [quirkReloadKey, setQuirkReloadKey] = useState(0);
+  const [isQuirkLoading, setIsQuirkLoading] = useState(false);
+
+  const handleAdvancedGatesChange = () => {
+    setIsQuirkLoading(true);
+    setTimeout(() => {
+      setQuirkReloadKey((value) => value + 1);
+    }, 0);
+  };
+
   return (
     <main className="lab-grid min-h-screen w-full max-w-full overflow-x-hidden bg-[#f8fbff] text-slate-900">
       <PlatformHeader />
@@ -45,8 +56,21 @@ export default function PlaygroundPage() {
           </Link>
         </div>
 
-        <div className="w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-cyan-100 bg-white shadow-[0_8px_32px_rgba(6,182,212,0.08)]">
-          <QuirkCircuit />
+        <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-cyan-100 bg-white shadow-[0_8px_32px_rgba(6,182,212,0.08)]">
+          {isQuirkLoading && (
+            <div className="absolute inset-0 z-50 flex h-[680px] items-center justify-center bg-white/90 text-slate-500 backdrop-blur-[1px]">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
+                <p className="text-sm font-medium">Loading Quantum Playground...</p>
+              </div>
+            </div>
+          )}
+
+          <QuirkCircuit
+            key={quirkReloadKey}
+            onAdvancedGatesChanged={handleAdvancedGatesChange}
+            onReady={() => setIsQuirkLoading(false)}
+          />
         </div>
       </section>
     </main>

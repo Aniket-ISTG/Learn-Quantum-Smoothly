@@ -75,7 +75,7 @@ class DisplayedInspector {
      * @returns {!DisplayedInspector}
      */
     static empty(drawArea) {
-        let topToolbox = new DisplayedToolbox('Toolbox', 0, Gates.TopToolboxGroups, true);
+        let topToolbox = new DisplayedToolbox('Toolbox', 0, Gates.getTopToolboxGroups(), true);
         let displayedCircuit = DisplayedCircuit.empty(topToolbox.desiredHeight());
         let histogram = new Histogram(displayedCircuit.desiredHeight());
         return new DisplayedInspector(
