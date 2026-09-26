@@ -269,12 +269,12 @@ export function QuirkCircuit({
   }, [initialCircuit, onCircuitChange, reloadKey]);
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col w-full min-w-0 max-w-full overflow-visible bg-white dark:bg-slate-900 select-none ${className}`}>
+    <div ref={containerRef} className={`relative flex flex-col w-full min-w-0 max-w-full overflow-visible bg-white select-none ${className}`}>
       {/* Loading state indicator */}
       {!isLoaded && !error && (
-        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
           <div className="h-10 w-10 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
-          <p className="mt-3 text-sm font-medium text-slate-600 dark:text-slate-300">
+          <p className="mt-3 text-sm font-medium text-slate-600">
             Loading your circuit environment
           </p>
         </div>
@@ -288,7 +288,7 @@ export function QuirkCircuit({
       )}
 
       {/* Main Quirk-E Top Navigation & Action Controls */}
-      <div id="inspectorDiv" style={{ display: "none", pointerEvents: isAnyPanelOpen ? "none" : "auto" }} className="relative z-20 w-full border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 py-2.5">
+      <div id="inspectorDiv" style={{ display: "none", pointerEvents: isAnyPanelOpen ? "none" : "auto" }} className="relative z-20 w-full border-b border-slate-200 bg-slate-50 px-4 py-2.5">
         <div id="menu-row" className="relative z-30 flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Left Group: Circuit Operations */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -301,11 +301,11 @@ export function QuirkCircuit({
               <span>Examples</span>
             </button>
 
-            <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1" />
+            <div className="h-4 w-[1px] bg-slate-300 mx-1" />
 
             <button
               id="undo-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Undo (Ctrl+Z)"
             >
               <i className="fa-solid fa-rotate-left text-[11px]" />
@@ -314,7 +314,7 @@ export function QuirkCircuit({
 
             <button
               id="redo-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Redo (Ctrl+Y)"
             >
               <i className="fa-solid fa-rotate-right text-[11px]" />
@@ -323,7 +323,7 @@ export function QuirkCircuit({
 
             <button
               id="clear-circuit-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Clear circuit gates"
             >
               <i className="fa-solid fa-eraser text-[11px]" />
@@ -332,27 +332,27 @@ export function QuirkCircuit({
 
             <button
               id="clear-all-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Reset everything to default"
             >
               <span>Reset All</span>
             </button>
 
-            <div className="h-4 w-[1px] bg-slate-300 dark:bg-slate-700 mx-1" />
+            <div className="h-4 w-[1px] bg-slate-300 mx-1" />
 
             {/* Inspector Toggle */}
             <button
               id="enable-inspector-button"
-              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-cyan-200 dark:border-cyan-800 bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 hover:bg-cyan-100 dark:hover:bg-cyan-900/50 transition font-medium"
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition font-medium"
               title="Step-by-step circuit inspector"
             >
               <i className="fa-solid fa-magnifying-glass text-[11px]" />
               <span>Inspector</span>
             </button>
 
-            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200">
+            <label className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-medium text-slate-700 shadow-sm">
               <span>Advance Gates</span>
-              <span className="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200 transition-colors dark:bg-slate-700">
+              <span className="relative inline-flex h-5 w-9 items-center rounded-full bg-slate-200 transition-colors">
                 <input
                   id="show-all-gates-toggle"
                   type="checkbox"
@@ -384,7 +384,7 @@ export function QuirkCircuit({
           <div className="flex flex-wrap items-center gap-1.5">
             <button
               id="gate-forge-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Custom Matrix Gate Forge"
             >
               <i className="fa-solid fa-wand-magic-sparkles text-[11px] text-amber-500" />
@@ -393,7 +393,7 @@ export function QuirkCircuit({
 
             <button
               id="import-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Import circuit (QASM, Quirk JSON, Quil, Qobj)"
             >
               <i className="fa-solid fa-file-import text-[11px] text-blue-500" />
@@ -402,7 +402,7 @@ export function QuirkCircuit({
 
             <button
               id="export-button"
-              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 transition"
               title="Export circuit (QASM, Qiskit, Cirq, JSON)"
             >
               <i className="fa-solid fa-file-export text-[11px] text-emerald-500" />
@@ -470,19 +470,19 @@ export function QuirkCircuit({
       <div
         id="canvasDiv"
         tabIndex={0}
-        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white dark:bg-slate-900 focus:outline-none min-h-[680px]"
+        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white focus:outline-none min-h-[680px]"
         style={{ position: "relative", pointerEvents: isAnyPanelOpen ? "none" : "auto" }}
       >
         <canvas id="drawCanvas" className="block outline-none" />
 
         {/* Right-click Context Menu on Gates */}
         <div id="gate-context-menu" style={{ position: "absolute", display: "none", zIndex: 1000 }}>
-          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 p-1.5 shadow-2xl backdrop-blur-md ring-1 ring-slate-200/70 dark:ring-slate-700/60">
-            <button id="delete-gate-button" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
+          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/95 p-1.5 shadow-2xl backdrop-blur-md ring-1 ring-slate-200/70">
+            <button id="delete-gate-button" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 transition">
               <i className="fa-solid fa-trash text-[11px]" />
               <span>Delete</span>
             </button>
-            <button id="duplicate-gate-button" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+            <button id="duplicate-gate-button" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-slate-700 hover:bg-slate-100 transition">
               <i className="fa-solid fa-clone text-[11px]" />
               <span>Duplicate</span>
             </button>
@@ -505,10 +505,10 @@ export function QuirkCircuit({
           <button id="inspector-step-left" className="h-10 w-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-angle-left" />
           </button>
-          <button id="inspector-play" className="h-10 w-10 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center text-sm shadow-sm">
+          <button id="inspector-play" className="h-10 w-10 rounded-lg bg-[#b8643e] hover:bg-[#a75b39] text-white flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-play" />
           </button>
-          <button id="inspector-pause" style={{ display: "none" }} className="h-10 w-10 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center text-sm shadow-sm">
+          <button id="inspector-pause" style={{ display: "none" }} className="h-10 w-10 rounded-lg bg-[#b8643e] hover:bg-[#a75b39] text-white flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-pause" />
           </button>
           <button id="inspector-step-right" className="h-10 w-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm">
@@ -523,20 +523,20 @@ export function QuirkCircuit({
       {/* Circuit Gallery (Examples) Modal */}
       <div id="circuits-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
         <div id="circuits-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
-        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div className="relative z-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 pb-4">
             <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 dark:bg-cyan-950 text-cyan-600">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
                 <i className="fa-solid fa-atom text-base" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-white">Example Circuit Gallery</h3>
+                <h3 className="text-lg font-semibold text-slate-900">Example Circuit Gallery</h3>
                 <p className="text-xs text-slate-500">Select an algorithm to load it into the playground</p>
               </div>
             </div>
             <button
               id="close-circuits-button"
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-600 transition"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
             >
               <i className="fa-solid fa-xmark text-lg" />
             </button>
@@ -545,76 +545,32 @@ export function QuirkCircuit({
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1 text-sm">
             <div className="space-y-1.5">
               <div className="text-xs font-bold uppercase tracking-wider text-cyan-600 mb-2">Core Algorithms</div>
-              <a id="example-anchor-grover" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Grover Search
-              </a>
-              <a id="example-anchor-shor" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Shor Period Finding
-              </a>
-              <a id="example-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Quantum Fourier Transform (QFT)
-              </a>
-              <a id="example-anchor-teleport" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Quantum Teleportation
-              </a>
-              <a id="example-superdense-coding" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Superdense Coding
-              </a>
-              <a id="example-chsh-test" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Bell Inequality Test (CHSH)
-              </a>
-              <a id="example-symmetry-break" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Symmetry Breaking
-              </a>
-              <a id="example-anchor-distill" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Magic State Distillation
-              </a>
-              <a id="example-addition" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Reversible Quantum Addition
-              </a>
-              <a id="example-anchor-delayed-eraser" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Quantum Delayed Choice Eraser
-              </a>
-              <a id="example-schrodingers-cat" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Schrödinger&apos;s Cat on 6 Qubits
-              </a>
+              <a id="example-anchor-grover" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Grover Search</a>
+              <a id="example-anchor-shor" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Shor Period Finding</a>
+              <a id="example-qft" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Quantum Fourier Transform (QFT)</a>
+              <a id="example-anchor-teleport" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Quantum Teleportation</a>
+              <a id="example-superdense-coding" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Superdense Coding</a>
+              <a id="example-chsh-test" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Bell Inequality Test (CHSH)</a>
+              <a id="example-symmetry-break" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Symmetry Breaking</a>
+              <a id="example-anchor-distill" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Magic State Distillation</a>
+              <a id="example-addition" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Reversible Quantum Addition</a>
+              <a id="example-anchor-delayed-eraser" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Quantum Delayed Choice Eraser</a>
+              <a id="example-schrodingers-cat" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Schrödinger&apos;s Cat on 6 Qubits</a>
             </div>
 
             <div className="space-y-1.5">
               <div className="text-xs font-bold uppercase tracking-wider text-cyan-600 mb-2">Entanglement, Gates &amp; QFT</div>
-              <a id="example-epr-pair" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Bell State (EPR Pair)
-              </a>
-              <a id="example-epr-pair-detailed" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Bell State (Detailed)
-              </a>
-              <a id="example-ccnot" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Toffoli (CCNOT) Gate
-              </a>
-              <a id="example-ccnot-decomposition" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                Toffoli Decomposition
-              </a>
-              <a id="example-two-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                2-Qubit QFT
-              </a>
-              <a id="example-three-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                3-Qubit QFT
-              </a>
-              <a id="example-four-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                4-Qubit QFT
-              </a>
-              <a id="example-right-shift" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                State Right-Shift
-              </a>
-              <a id="example-left-shift" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                State Left-Shift
-              </a>
-              <a id="example-optimized-state-5-qubits" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                5-Qubit Optimized State Shift
-              </a>
-              <a id="example-optimized-state-6-qubits" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
-                6-Qubit Optimized State Shift
-              </a>
+              <a id="example-epr-pair" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Bell State (EPR Pair)</a>
+              <a id="example-epr-pair-detailed" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Bell State (Detailed)</a>
+              <a id="example-ccnot" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Toffoli (CCNOT) Gate</a>
+              <a id="example-ccnot-decomposition" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">Toffoli Decomposition</a>
+              <a id="example-two-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">2-Qubit QFT</a>
+              <a id="example-three-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">3-Qubit QFT</a>
+              <a id="example-four-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">4-Qubit QFT</a>
+              <a id="example-right-shift" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">State Right-Shift</a>
+              <a id="example-left-shift" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">State Left-Shift</a>
+              <a id="example-optimized-state-5-qubits" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">5-Qubit Optimized State Shift</a>
+              <a id="example-optimized-state-6-qubits" className="block p-2.5 rounded-xl border border-slate-200 hover:border-cyan-400 hover:bg-cyan-50/50 cursor-pointer font-medium text-black transition">6-Qubit Optimized State Shift</a>
             </div>
           </div>
         </div>
@@ -659,11 +615,11 @@ export function QuirkCircuit({
                 </button>
                 <span id="export-format-result" className="text-emerald-600 font-medium ml-2" />
               </div>
-              <pre id="export-circuit-formats-pre" className="mt-2.5 max-h-48 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-[11px] text-slate-800 dark:text-slate-200" />
+              <pre id="export-circuit-formats-pre" className="mt-2.5 max-h-48 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-3 font-mono text-[11px] text-slate-800" />
               <span id="export-format-error" className="text-rose-500 font-medium block mt-1" />
             </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
+            <div className="border-t border-slate-200 pt-3">
               <label className="block font-medium text-slate-700 mb-1">Circuit JSON:</label>
               <div className="flex items-center gap-2 mb-1.5">
                 <button id="export-json-copy-button" className="btn-secondary !py-1.5 !px-3 text-xs text-slate-800">
@@ -747,7 +703,7 @@ export function QuirkCircuit({
                 Import failed. Check format syntax.
               </span>
             </div>
-            <p className="text-[11px] text-amber-600 dark:text-amber-400">
+            <p className="text-[11px] text-amber-600">
               * Note: Importing will replace your active circuit layout.
             </p>
           </div>

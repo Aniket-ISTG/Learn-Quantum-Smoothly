@@ -13,21 +13,10 @@ const navLinks = [
   { href: "/ide", label: "IDE" },
 ];
 
-export function PlatformHeader({
-  theme = "light",  
-  onThemeChange = () => {},
-}: {
-  theme?: "light" | "dark";
-  onThemeChange?: (next: "light" | "dark") => void;
-}) {
+export function PlatformHeader() {
   const router = useRouter();
   const pathname = usePathname();
   const [email, setEmail] = useState<string | null>(null);
-
-  const themeOptions = [
-    { id: "light", label: "Light" },
-    { id: "dark", label: "Dark" },
-  ] as const;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -79,23 +68,6 @@ export function PlatformHeader({
         </nav>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <div className="hidden items-center gap-1 rounded-full border border-[#e6d3c0] bg-[rgba(255,250,245,0.7)] p-1 md:flex">
-            {themeOptions.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                onClick={() => onThemeChange(option.id)}
-                className={`rounded-full px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.12em] transition ${
-                  theme === option.id
-                    ? "bg-[#b8643e] text-white shadow-sm"
-                    : "text-[#5f5049] hover:text-[#a75b39]"
-                }`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
           {email ? (
             <span className="hidden max-w-[140px] truncate text-xs text-[#6b584c] sm:block">
               {email}

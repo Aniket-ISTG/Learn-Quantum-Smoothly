@@ -327,15 +327,15 @@ export default function Chat() {
             className="
               h-full
               w-full
-              bg-slate-900
-              text-slate-100
+              bg-[rgba(255,251,247,0.98)]
+              text-slate-800
               rounded-2xl
-              shadow-2xl
+              shadow-[0_20px_60px_rgba(92,63,42,0.18)]
               flex
               flex-col
               overflow-hidden
               border
-              border-slate-700
+              border-[#eadbc9]
             "
           >
             {/* =================================================
@@ -348,7 +348,8 @@ export default function Chat() {
                 px-3
                 py-2
                 border-b
-                border-slate-700
+                border-[#eadbc9]
+                bg-[rgba(255,245,238,0.9)]
                 flex
                 items-center
                 justify-between
@@ -364,19 +365,19 @@ export default function Chat() {
                     h-8
                     w-8
                     rounded-lg
-                    bg-cyan-400/10
+                    bg-[#f3d6c1]
                     border
-                    border-cyan-400/20
+                    border-[#d78d5f]
                     flex
                     items-center
                     justify-center
-                    text-cyan-300
+                    text-[#8b4d2d]
                   "
                 >
                   ✦
                 </div>
 
-                <div className="text-sm font-medium">
+                <div className="text-sm font-semibold text-[#3a2d27]">
                   AI Tutor
                 </div>
               </div>
@@ -386,8 +387,8 @@ export default function Chat() {
                 <button
                   className="
                     text-xs
-                    text-slate-400
-                    hover:text-slate-200
+                    text-[#6b584c]
+                    hover:text-[#a75b39]
                     transition
                   "
                   onClick={(e) => {
@@ -411,9 +412,9 @@ export default function Chat() {
                     flex
                     items-center
                     justify-center
-                    text-slate-400
-                    hover:bg-slate-800
-                    hover:text-white
+                    text-[#6b584c]
+                    hover:bg-[#f6e7dc]
+                    hover:text-[#a75b39]
                     transition
                     cursor-pointer
                   "
@@ -451,12 +452,12 @@ export default function Chat() {
                   <div
                     className={
                       m.role === "user"
-                        ? "max-w-[88%] bg-slate-700 px-3 py-2 rounded-lg text-left break-words"
-                        : "max-w-[92%] bg-slate-800 px-3 py-3 rounded-lg text-left break-words"
+                        ? "max-w-[88%] bg-[#e7d8cc] px-3 py-2 rounded-lg text-left break-words text-[#2d241f]"
+                        : "max-w-[92%] bg-[#f9f3ee] px-3 py-3 rounded-lg text-left break-words text-[#2d241f] border border-[#eadbc9]"
                     }
                   >
                     {m.role === "assistant" ? (
-                      <div className="ai-markdown text-sm leading-6 text-slate-200">
+                      <div className="ai-markdown text-sm leading-6 text-[#2d241f]">
                         <ReactMarkdown
                           remarkPlugins={[
                             remarkGfm,
@@ -475,19 +476,19 @@ export default function Chat() {
 
                             /* HEADINGS */
                             h1: ({ children }) => (
-                              <h1 className="text-lg font-bold text-white mt-1 mb-3">
+                              <h1 className="text-lg font-bold text-[#261d18] mt-1 mb-3">
                                 {children}
                               </h1>
                             ),
 
                             h2: ({ children }) => (
-                              <h2 className="text-base font-bold text-white mt-4 mb-2">
+                              <h2 className="text-base font-bold text-[#261d18] mt-4 mb-2">
                                 {children}
                               </h2>
                             ),
 
                             h3: ({ children }) => (
-                              <h3 className="text-sm font-semibold text-cyan-300 mt-3 mb-2">
+                              <h3 className="text-sm font-semibold text-[#a75b39] mt-3 mb-2">
                                 {children}
                               </h3>
                             ),
@@ -515,21 +516,21 @@ export default function Chat() {
 
                             /* BOLD */
                             strong: ({ children }) => (
-                              <strong className="font-semibold text-white">
+                              <strong className="font-semibold text-[#261d18]">
                                 {children}
                               </strong>
                             ),
 
                             /* ITALIC */
                             em: ({ children }) => (
-                              <em className="italic text-slate-300">
+                              <em className="italic text-[#5a4840]">
                                 {children}
                               </em>
                             ),
 
                             /* BLOCKQUOTE */
                             blockquote: ({ children }) => (
-                              <blockquote className="border-l-2 border-cyan-400 pl-3 my-3 text-slate-300">
+                              <blockquote className="border-l-2 border-[#d78d5f] pl-3 my-3 text-[#5a4840]">
                                 {children}
                               </blockquote>
                             ),
@@ -553,7 +554,7 @@ export default function Chat() {
                               }
 
                               return (
-                                <code className="bg-slate-950 border border-slate-700 rounded px-1.5 py-0.5 text-cyan-300 text-xs">
+                                <code className="bg-[#f4e8df] border border-[#e7d1bd] rounded px-1.5 py-0.5 text-[#a75b39] text-xs">
                                   {children}
                                 </code>
                               );
@@ -561,7 +562,7 @@ export default function Chat() {
 
                             /* CODE BLOCK */
                             pre: ({ children }) => (
-                              <pre className="bg-slate-950 border border-slate-700 rounded-lg p-3 my-3 overflow-x-auto text-xs leading-5">
+                              <pre className="bg-[#fffaf5] border border-[#eadbc9] rounded-lg p-3 my-3 overflow-x-auto text-xs leading-5 text-[#2d241f]">
                                 {children}
                               </pre>
                             ),
@@ -575,7 +576,7 @@ export default function Chat() {
                                 href={href}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="text-cyan-400 hover:text-cyan-300 hover:underline"
+                                className="text-[#a75b39] hover:text-[#8b4d2d] hover:underline"
                               >
                                 {children}
                               </a>
@@ -583,7 +584,7 @@ export default function Chat() {
 
                             /* HORIZONTAL RULE */
                             hr: () => (
-                              <hr className="my-4 border-slate-700" />
+                              <hr className="my-4 border-[#eadbc9]" />
                             ),
 
                             /* TABLE */
@@ -596,13 +597,13 @@ export default function Chat() {
                             ),
 
                             th: ({ children }) => (
-                              <th className="border border-slate-700 bg-slate-900 px-2 py-1.5 text-left font-semibold text-white">
+                              <th className="border border-[#eadbc9] bg-[#f5eee7] px-2 py-1.5 text-left font-semibold text-[#261d18]">
                                 {children}
                               </th>
                             ),
 
                             td: ({ children }) => (
-                              <td className="border border-slate-700 px-2 py-1.5 text-slate-300">
+                              <td className="border border-[#eadbc9] px-2 py-1.5 text-[#4d3d35]">
                                 {children}
                               </td>
                             ),
@@ -641,17 +642,17 @@ export default function Chat() {
                   w-full
                   resize-none
                   h-20
-                  bg-slate-900
-                  text-slate-100
-                  placeholder-slate-500
+                  bg-[#fffaf5]
+                  text-[#2d241f]
+                  placeholder-[#8c766a]
                   rounded-md
                   p-2
                   border
-                  border-slate-700
+                  border-[#eadbc9]
                   outline-none
-                  focus:border-cyan-500
+                  focus:border-[#d78d5f]
                   focus:ring-1
-                  focus:ring-cyan-500
+                  focus:ring-[#d78d5f]
                   transition
                 "
                 disabled={loading}
@@ -667,8 +668,9 @@ export default function Chat() {
                     px-2
                     py-1
                     rounded
-                    bg-slate-700
-                    hover:bg-slate-600
+                    bg-[#f2e4d8]
+                    text-[#4d3d35]
+                    hover:bg-[#ecd4bf]
                     transition
                   "
                 >
@@ -685,9 +687,9 @@ export default function Chat() {
                     px-3
                     py-1
                     rounded
-                    bg-emerald-500
-                    text-black
-                    hover:brightness-95
+                    bg-[#b8643e]
+                    text-white
+                    hover:bg-[#a75b39]
                     disabled:opacity-50
                     transition
                   "
@@ -724,20 +726,20 @@ export default function Chat() {
           w-14
           rounded-full
           bg-gradient-to-br
-          from-cyan-400
-          to-violet-500
+          from-[#d78d5f]
+          to-[#b8643e]
           text-white
           text-2xl
           font-bold
           flex
           items-center
           justify-center
-          shadow-[0_4px_20px_rgba(6,182,212,0.35)]
+          shadow-[0_8px_24px_rgba(184,100,62,0.28)]
           transition-all
           duration-200
           hover:scale-105
-          hover:from-cyan-300
-          hover:to-violet-400
+          hover:from-[#d59066]
+          hover:to-[#a75b39]
           active:scale-95
         "
       >

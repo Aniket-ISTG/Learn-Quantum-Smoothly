@@ -35,15 +35,9 @@ export function QuantumLab({
   category?: Category;
   lesson?: string;
 }) {
-  const [theme, setTheme] = useState<"light" | "dark">("light");
-
   return (
-    <main
-      className={`min-h-screen ${
-        theme === "dark" ? "theme-dark" : "theme-light"
-      }`}
-    >
-      <PlatformHeader theme={theme} onThemeChange={setTheme} />
+    <main className="theme-light min-h-screen">
+      <PlatformHeader />
 
       {view === "home" && <Homepage />}
       {view === "roadmap" && <Roadmap />}
