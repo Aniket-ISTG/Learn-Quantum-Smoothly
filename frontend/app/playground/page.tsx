@@ -35,7 +35,7 @@ export default function PlaygroundPage() {
     <main className="lab-grid min-h-screen w-full max-w-full overflow-x-hidden bg-[#f8fbff] text-slate-900">
       <PlatformHeader />
 
-      <section className="mx-auto flex w-full max-w-[1600px] min-w-0 flex-col px-4 py-7 sm:px-6">
+      <section className="mx-auto flex w-full max-w-[1200px] min-w-0 flex-col px-4 py-7 sm:px-6">
         <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
           <div>
             <p className="text-xs font-bold uppercase tracking-[.2em] text-cyan-600">

@@ -470,7 +470,7 @@ export function QuirkCircuit({
       <div
         id="canvasDiv"
         tabIndex={0}
-        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white focus:outline-none min-h-[680px]"
+        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white focus:outline-none min-h-[560px]"
         style={{ position: "relative", pointerEvents: isAnyPanelOpen ? "none" : "auto" }}
       >
         <canvas id="drawCanvas" className="block outline-none" />
