@@ -298,12 +298,13 @@ function modernizeQiskitExport(qiskitCode, options = {}) {
     }
 
     output.push("");
-    output.push("qc.measure_all()");
 
     // Operations
     for (const operation of operations) {
         output.push(operation);
     }
+
+    output.push("qc.measure_all()");
 
     // Backend
     if (includeBackend) {
