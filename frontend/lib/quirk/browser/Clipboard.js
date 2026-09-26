@@ -18,7 +18,14 @@
  * @param {!HTMLElement} element
  * @throws
  */
-function selectAndCopyToClipboard(element) {
+async function selectAndCopyToClipboard(element) {
+    const text = element.textContent || "";
+
+    if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(text);
+        return;
+    }
+
     if (document.selection) {
         //noinspection XHTMLIncompatabilitiesJS
         let range = document.body.createTextRange();

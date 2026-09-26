@@ -60,14 +60,13 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
      * @param {undefined|!function(): !string} contentMaker
      */
     const setupButtonElementCopyToClipboard = (button, contentElement, resultElement, contentMaker=undefined) =>
-        button.addEventListener('click', () => {
+        button.addEventListener('click', async () => {
             if (contentMaker !== undefined) {
                 contentElement.innerText = contentMaker();
             }
 
-            //noinspection UnusedCatchParameterJS,EmptyCatchBlockJS
             try {
-                selectAndCopyToClipboard(contentElement);
+                await selectAndCopyToClipboard(contentElement);
                 resultElement.innerText = "Done!";
             } catch (ex) {
                 resultElement.innerText = "It didn't work...";

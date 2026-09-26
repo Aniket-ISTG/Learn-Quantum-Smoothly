@@ -623,26 +623,26 @@ export function QuirkCircuit({
       {/* Export Dialog Modal */}
       <div id="export-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
         <div id="export-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
-        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-            <h3 id="export-title" className="text-base font-semibold text-slate-900 dark:text-white">Export Quantum Circuit</h3>
+        <div className="relative z-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 id="export-title" className="text-base font-semibold text-slate-900">Export Quantum Circuit</h3>
             <button
               onClick={() => {
                 window.dispatchEvent(new Event("quirk-reset-overlays"));
                 const el = document.getElementById("export-div");
                 if (el) el.style.display = "none";
               }}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition"
             >
               <i className="fa-solid fa-xmark text-base" />
             </button>
           </div>
 
-          <div className="mt-4 space-y-4 max-h-[65vh] overflow-y-auto pr-1 text-xs">
+          <div className="mt-4 space-y-4 max-h-[65vh] overflow-y-auto pr-1 text-xs text-slate-800">
             <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1.5">Select Export Format:</label>
+              <label className="block font-medium text-slate-700 mb-1.5">Select Export Format:</label>
               <div className="flex items-center gap-2">
-                <select id="export-format-select" className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs">
+                <select id="export-format-select" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800">
                   <option value="QASM2.0">OpenQASM 2.0</option>
                   <option value="Qiskit">Qiskit (Python)</option>
                   <option value="Cirq">Cirq (Python)</option>
@@ -664,27 +664,27 @@ export function QuirkCircuit({
             </div>
 
             <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">Circuit JSON:</label>
+              <label className="block font-medium text-slate-700 mb-1">Circuit JSON:</label>
               <div className="flex items-center gap-2 mb-1.5">
-                <button id="export-json-copy-button" className="btn-secondary !py-1.5 !px-3 text-xs">
+                <button id="export-json-copy-button" className="btn-secondary !py-1.5 !px-3 text-xs text-slate-800">
                   Copy Circuit JSON
                 </button>
                 <span id="export-json-copy-result" className="text-emerald-600 font-medium" />
               </div>
-              <pre id="export-circuit-json-pre" className="max-h-28 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2 font-mono text-[11px]" />
+              <pre id="export-circuit-json-pre" className="max-h-28 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-2 font-mono text-[11px] text-slate-800" />
             </div>
 
-            <div className="border-t border-slate-200 dark:border-slate-800 pt-3">
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1">State Vector &amp; Amplitudes Data:</label>
+            <div className="border-t border-slate-200 pt-3">
+              <label className="block font-medium text-slate-700 mb-1">State Vector &amp; Amplitudes Data:</label>
               <div className="flex items-center gap-2 mb-1.5">
-                <button id="export-amplitudes-button" className="btn-secondary !py-1.5 !px-3 text-xs">
+                <button id="export-amplitudes-button" className="btn-secondary !py-1.5 !px-3 text-xs text-slate-800">
                   Generate Output Amplitudes
                 </button>
                 <input type="checkbox" id="export-amplitudes-use-amps" className="accent-cyan-600" />
-                <label htmlFor="export-amplitudes-use-amps" className="text-slate-600 dark:text-slate-400">Skip zero amplitudes</label>
+                <label htmlFor="export-amplitudes-use-amps" className="text-slate-600">Skip zero amplitudes</label>
                 <span id="export-amplitudes-result" className="text-emerald-600 font-medium" />
               </div>
-              <pre id="export-amplitudes-pre" className="max-h-28 overflow-auto rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-2 font-mono text-[11px]" />
+              <pre id="export-amplitudes-pre" className="max-h-28 overflow-auto rounded-lg border border-slate-200 bg-slate-50 p-2 font-mono text-[11px] text-slate-800" />
             </div>
 
             {/* Hidden fallback anchors for Quirk-E exports */}
@@ -702,25 +702,25 @@ export function QuirkCircuit({
       {/* Import Dialog Modal */}
       <div id="import-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
         <div id="import-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
-        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-            <h3 id="import-title" className="text-base font-semibold text-slate-900 dark:text-white">Import Quantum Circuit</h3>
+        <div className="relative z-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 id="import-title" className="text-base font-semibold text-slate-900">Import Quantum Circuit</h3>
             <button
               onClick={() => {
                 window.dispatchEvent(new Event("quirk-reset-overlays"));
                 const el = document.getElementById("import-div");
                 if (el) el.style.display = "none";
               }}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition"
             >
               <i className="fa-solid fa-xmark text-base" />
             </button>
           </div>
 
-          <div className="mt-4 space-y-3 text-xs">
+          <div className="mt-4 space-y-3 text-xs text-slate-800">
             <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1.5">Source Format:</label>
-              <select id="import-format-select" className="rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-xs w-full">
+              <label className="block font-medium text-slate-700 mb-1.5">Source Format:</label>
+              <select id="import-format-select" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs w-full text-slate-800">
                 <option value="quirk-json">Quirk-E JSON</option>
                 <option value="QASM2.0">OpenQASM 2.0</option>
                 <option value="QUIL2.0">QUIL 2.0</option>
@@ -730,17 +730,17 @@ export function QuirkCircuit({
             </div>
 
             <div>
-              <label className="block font-medium text-slate-700 dark:text-slate-300 mb-1.5">Paste Circuit Code / JSON:</label>
+              <label className="block font-medium text-slate-700 mb-1.5">Paste Circuit Code / JSON:</label>
               <textarea
                 id="import-circuit-textarea"
                 rows={8}
                 placeholder="Paste OpenQASM or Quirk JSON here..."
-                className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 p-3 font-mono text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500"
+                className="w-full rounded-xl border border-slate-200 bg-slate-50 p-3 font-mono text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-cyan-500"
               />
             </div>
 
             <div className="flex items-center justify-between pt-2">
-              <button id="import-circuit-button" className="btn-primary !py-2 !px-4 text-xs font-semibold">
+              <button id="import-circuit-button" className="btn-primary !py-2 !px-4 text-xs font-semibold text-white">
                 Import to Circuit
               </button>
               <span id="import-error-message" className="text-rose-500 font-medium text-xs" style={{ display: "none" }}>
@@ -757,40 +757,40 @@ export function QuirkCircuit({
       {/* Gate Forge Modal */}
       <div id="gate-forge-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
         <div id="gate-forge-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
-        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
-            <h3 className="text-base font-semibold text-slate-900 dark:text-white">Custom Gate Forge</h3>
+        <div className="relative z-10 rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h3 className="text-base font-semibold text-slate-900">Custom Gate Forge</h3>
             <button
               onClick={() => {
                 window.dispatchEvent(new Event("quirk-reset-overlays"));
                 const el = document.getElementById("gate-forge-div");
                 if (el) el.style.display = "none";
               }}
-              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 transition"
+              className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 transition"
             >
               <i className="fa-solid fa-xmark text-base" />
             </button>
           </div>
 
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-950">
-              <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">From Rotation</h4>
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-800">
+            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50">
+              <h4 className="font-semibold text-slate-800 mb-2">From Rotation</h4>
               <div className="space-y-2">
                 <div>
                   <label className="text-[11px] text-slate-500">Rotation Axis (e.g. X+Z):</label>
-                  <input id="gate-forge-rotation-axis" placeholder="X+Z" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs" />
+                  <input id="gate-forge-rotation-axis" placeholder="X+Z" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs" />
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-500">Angle (° degrees):</label>
-                  <input id="gate-forge-rotation-angle" placeholder="45" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs" />
+                  <input id="gate-forge-rotation-angle" placeholder="45" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs" />
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-500">Global Phase (°):</label>
-                  <input id="gate-forge-rotation-phase" placeholder="0" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs" />
+                  <input id="gate-forge-rotation-phase" placeholder="0" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs" />
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-500">Gate Symbol / Name:</label>
-                  <input id="gate-forge-rotation-name" placeholder="R" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs" />
+                  <input id="gate-forge-rotation-name" placeholder="R" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs" />
                 </div>
                 <canvas id="gate-forge-rotation-canvas" width={40} height={40} className="hidden" />
                 <button id="gate-forge-rotation-button" className="btn-primary !w-full !py-2 text-xs mt-2">
@@ -799,20 +799,20 @@ export function QuirkCircuit({
               </div>
             </div>
 
-            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 bg-slate-50 dark:bg-slate-950">
-              <h4 className="font-semibold text-slate-800 dark:text-slate-200 mb-2">From Unitary Matrix</h4>
+            <div className="rounded-xl border border-slate-200 p-3 bg-slate-50">
+              <h4 className="font-semibold text-slate-800 mb-2">From Unitary Matrix</h4>
               <div className="space-y-2">
                 <div>
                   <label className="text-[11px] text-slate-500">Matrix Entries (comma-separated):</label>
-                  <textarea id="gate-forge-matrix" rows={4} placeholder="1, 0, 0, -1" className="w-full mt-1 p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 font-mono text-xs" />
+                  <textarea id="gate-forge-matrix" rows={4} placeholder="1, 0, 0, -1" className="w-full mt-1 p-2 rounded-lg border border-slate-300 bg-white font-mono text-xs text-slate-800" />
                 </div>
                 <div>
                   <label className="text-[11px] text-slate-500">Gate Symbol / Name:</label>
-                  <input id="gate-forge-matrix-name" placeholder="U" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs" />
+                  <input id="gate-forge-matrix-name" placeholder="U" className="w-full mt-1 px-2.5 py-1.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-xs" />
                 </div>
                 <div className="flex items-center gap-1.5">
                   <input type="checkbox" id="gate-forge-matrix-fix" className="accent-cyan-600" />
-                  <label htmlFor="gate-forge-matrix-fix" className="text-[11px] text-slate-600 dark:text-slate-400">Orthogonalize to Unitary</label>
+                  <label htmlFor="gate-forge-matrix-fix" className="text-[11px] text-slate-600">Orthogonalize to Unitary</label>
                 </div>
                 <canvas id="gate-forge-matrix-canvas" width={40} height={40} className="hidden" />
                 <button id="gate-forge-matrix-button" className="btn-primary !w-full !py-2 text-xs mt-2">

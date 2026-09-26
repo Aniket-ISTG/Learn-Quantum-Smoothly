@@ -15,42 +15,70 @@ function initImports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
         // Due to horrors of Grunt, I have decided to include QuantumCircuit
         // in an external script tag. This is horrible, sorry. However, it works.
         const circuit = new QuantumCircuit();
-        let type = document.getElementById("import-format-select").value;
-        let input = document.getElementById("import-circuit-textarea").value;
-        let error_message = document.getElementById("import-error-message");
-        let error = false;
-        
-        if(!input) return;
+        const type = document.getElementById("import-format-select").value;
+        const input = document.getElementById("import-circuit-textarea").value;
+        const error_message = document.getElementById("import-error-message");
 
-        const handleImportError = (err) => {
-            if(!Array.isArray(err) || !err.length) return;
+        const setError = (message) => {
+            error_message.textContent = message || "Import failed. Check the format and input.";
+            error_message.style.display = "block";
+        };
 
-            console.error(err);
-            error = true;
+        if (!input || !input.trim()) {
+            setError("Please paste a circuit before importing.");
+            return;
         }
-        
+
         let circuit_json = '{"cols":[]}';
+        let parseError = null;
 
-        if(type != "quirk-json") {
-            if(type == "QASM2.0") circuit.importQASM(input, handleImportError);
-            if(type == "QUIL2.0") circuit.importQuil(input, handleImportError);
-            if(type == "IONQ") circuit.importIonq(JSON.parse(input), handleImportError);
-            if(type == "Qobj") circuit.importQobj(JSON.parse(input), handleImportError);
-            circuit_json = JSON.stringify(circuit.exportQuirk());
-        } else {
-            circuit_json = input;
-        }
-        
-        if(!error) {
-            try {
-                revision.commit(circuit_json);
-                importsIsVisible.set(false);
-            } catch(err) {
-                error = true;
-                console.error(err);
+        try {
+            if (type === "quirk-json") {
+                JSON.parse(input);
+                circuit_json = input;
+            } else {
+                const parseJsonInput = (label) => {
+                    try {
+                        return JSON.parse(input);
+                    } catch (err) {
+                        throw new Error(`Invalid ${label} JSON: ${err.message}`);
+                    }
+                };
+
+                if (type === "QASM2.0") {
+                    circuit.importQASM(input, (err) => {
+                        throw new Error(Array.isArray(err) && err.length ? String(err[0]) : "Invalid OpenQASM input.");
+                    });
+                } else if (type === "QUIL2.0") {
+                    circuit.importQuil(input, (err) => {
+                        throw new Error(Array.isArray(err) && err.length ? String(err[0]) : "Invalid QUIL input.");
+                    });
+                } else if (type === "IONQ") {
+                    circuit.importIonq(parseJsonInput("IONQ"), (err) => {
+                        throw new Error(Array.isArray(err) && err.length ? String(err[0]) : "Invalid IONQ input.");
+                    });
+                } else if (type === "Qobj") {
+                    circuit.importQobj(parseJsonInput("Qobj"), (err) => {
+                        throw new Error(Array.isArray(err) && err.length ? String(err[0]) : "Invalid Qobj input.");
+                    });
+                } else {
+                    throw new Error("Unsupported import format.");
+                }
+
+                circuit_json = JSON.stringify(circuit.exportQuirk());
             }
+
+            revision.commit(circuit_json);
+            importsIsVisible.set(false);
+            error_message.style.display = "none";
+        } catch (err) {
+            parseError = err;
+            setError(err && err.message ? err.message : "Import failed. Check the format and input.");
         }
-        error_message.style.display = error ? "block" : "none";
+
+        if (parseError) {
+            console.warn("Import failed:", parseError);
+        }
     }
 
     // Show/hide exports overlay.
@@ -73,6 +101,7 @@ function initImports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
         obsImportsIsShowing.subscribe(showing => {
             importDiv.style.display = showing ? 'block' : 'none';
             inputField.value = ""; // clear value on show & hide
+            error_message.style.display = "none";
             if (showing) {
                 document.getElementById('export-link-copy-button').focus();
             }
