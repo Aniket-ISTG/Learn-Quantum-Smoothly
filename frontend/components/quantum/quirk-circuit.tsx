@@ -621,16 +621,9 @@ export function QuirkCircuit({
               <label className="block font-medium text-slate-700 mb-1.5">Select Export Format:</label>
               <div className="flex items-center gap-2">
                 <select id="export-format-select" className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-800">
-                  <option value="QASM2.0">OpenQASM 2.0</option>
-                  <option value="Qiskit">Qiskit (Python)</option>
-                  <option value="Cirq">Cirq (Python)</option>
-                  <option value="PyQuil">PyQuil (Python)</option>
-                  <option value="Quil">Quil (Rigetti)</option>
-                  <option value="Braket">Amazon Braket</option>
-                  <option value="QSharp">Q# (Microsoft)</option>
-                  <option value="QuEST">QuEST (C/C++)</option>
-                  <option value="TFQ">Tensorflow Quantum</option>
-                  <option value="Qobj">Qobj (JSON)</option>
+                  <option value="Qiskit">Qiskit</option>
+                  <option value="Cirq">Cirq</option>
+                  <option value="PennyLane">PennyLane</option>
                 </select>
                 <button id="export-circuit-format" className="btn-primary !py-2 !px-3 text-xs">
                   Generate &amp; Copy

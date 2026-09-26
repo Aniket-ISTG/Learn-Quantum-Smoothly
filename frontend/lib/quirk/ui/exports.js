@@ -31,6 +31,15 @@ const closeExports = () => exportsIsVisible.set(false);
  * @param {!Observable.<!boolean>} obsIsAnyOverlayShowing
  */
 function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
+    const preserveCodeFormatting = (element) => {
+        if (!element) {
+            return;
+        }
+        element.style.whiteSpace = 'pre-wrap';
+        element.style.wordBreak = 'break-word';
+        element.style.overflowWrap = 'anywhere';
+    };
+
     // Show/hide exports overlay.
     (() => {
         const exportButton = /** @type {!HTMLButtonElement} */ document.getElementById('export-button');
@@ -62,19 +71,19 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
     const setupButtonElementCopyToClipboard = (button, contentElement, resultElement, contentMaker=undefined) =>
         button.addEventListener('click', async () => {
             if (contentMaker !== undefined) {
-                contentElement.innerText = contentMaker();
+                contentElement.textContent = contentMaker();
             }
 
             try {
                 await selectAndCopyToClipboard(contentElement);
-                resultElement.innerText = "Done!";
+                resultElement.textContent = "Done!";
             } catch (ex) {
-                resultElement.innerText = "It didn't work...";
+                resultElement.textContent = "It didn't work...";
                 console.warn('Clipboard copy failed.', ex);
             }
             button.disabled = true;
             setTimeout(() => {
-                resultElement.innerText = "";
+                resultElement.textContent = "";
                 button.disabled = false;
             }, 1000);
         });
@@ -88,13 +97,14 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
         revision.latestActiveCommit().subscribe(jsonText => {
             let escapedUrlHash = "#" + Config.URL_CIRCUIT_PARAM_KEY + "=" + encodeURIComponent(jsonText);
             linkElement.href = escapedUrlHash;
-            linkElement.innerText = document.location.href.split("#")[0] + escapedUrlHash;
+            linkElement.textContent = document.location.href.split("#")[0] + escapedUrlHash;
         });
     })();
 
     // Export JSON.
     (() => {
         const jsonTextElement = /** @type {HTMLPreElement} */ document.getElementById('export-circuit-json-pre');
+        preserveCodeFormatting(jsonTextElement);
         const copyButton = /** @type {HTMLButtonElement} */ document.getElementById('export-json-copy-button');
         const copyResultElement = /** @type {HTMLElement} */ document.getElementById('export-json-copy-result');
         setupButtonElementCopyToClipboard(copyButton, jsonTextElement, copyResultElement);
@@ -102,9 +112,9 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
             //noinspection UnusedCatchParameterJS
             try {
                 let val = JSON.parse(jsonText);
-                jsonTextElement.innerText = JSON.stringify(val, null, '  ');
+                jsonTextElement.textContent = JSON.stringify(val, null, '  ');
             } catch (_) {
-                jsonTextElement.innerText = jsonText;
+                jsonTextElement.textContent = jsonText;
             }
         });
     })();
@@ -112,11 +122,12 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
     // Export final output.
     (() => {
         const outputTextElement = /** @type {HTMLPreElement} */ document.getElementById('export-amplitudes-pre');
+        preserveCodeFormatting(outputTextElement);
         const copyButton = /** @type {HTMLButtonElement} */ document.getElementById('export-amplitudes-button');
         const copyResultElement = /** @type {HTMLElement} */ document.getElementById('export-amplitudes-result');
         const excludeAmps = /** @type {HTMLInputElement} */ document.getElementById('export-amplitudes-use-amps');
         obsIsAnyOverlayShowing.subscribe(_ => {
-            outputTextElement.innerText = '[not generated yet]';
+            outputTextElement.textContent = '[not generated yet]';
         });
         setupButtonElementCopyToClipboard(
             copyButton,
@@ -130,13 +141,15 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
     
     (() => {
         const outputTextElement = /** @type {HTMLPreElement} */ document.getElementById('export-circuit-formats-pre');
+        preserveCodeFormatting(outputTextElement);
         const copyButton = /** @type {HTMLPreElement} */ document.getElementById("export-circuit-format");
         const copyResultElement = /** @type {HTMLElement} */ document.getElementById('export-format-result');
         const exportError = /** @type {HTMLElement} */ document.getElementById('export-format-error');
+        preserveCodeFormatting(exportError);
         const exportFormatSelect = /** @type {string} */ document.getElementById("export-format-select");
         obsIsAnyOverlayShowing.subscribe(_ => {
-            outputTextElement.innerText = '[not generated yet]';
-            exportError.innerText = '';
+            outputTextElement.textContent = '[not generated yet]';
+            exportError.textContent = '';
         });
         setupButtonElementCopyToClipboard(
             copyButton,
@@ -150,10 +163,10 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
                 }
                 catch(err) {
                     if(err instanceof UnsupportedGateError || err instanceof UnimplementedCircuitError) {
-                        exportError.innerText = err.message + "\n";
+                        exportError.textContent = err.message + "\n";
                     } 
                     else {
-                        exportError.innerText = "Unknown error. Check console for details.\n";
+                        exportError.textContent = "Unknown error. Check console for details.\n";
                         console.error(err);
                     }
                 }
