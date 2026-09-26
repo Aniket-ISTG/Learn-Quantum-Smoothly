@@ -3,6 +3,7 @@ import QuantumCircuit from "quantum-circuit";
 
 const importsIsVisible = new ObservableValue(false);
 const obsImportsIsShowing = importsIsVisible.observable().whenDifferent();
+const closeImports = () => importsIsVisible.set(false);
 
 /**
  * @param {!Revision} revision
@@ -80,4 +81,4 @@ function initImports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
 }
 
 
-export {initImports}
+export {initImports, closeImports}

@@ -36,8 +36,8 @@ import {initializedWglContext} from "./webgl/WglContext.js"
 import {watchDrags, isMiddleClicking, eventPosRelativeTo} from "./browser/MouseWatcher.js"
 import {ObservableValue, ObservableSource} from "./base/Obs.js"
 import {ContextMenu} from "./ui/ContextMenu.js"
-import {initExports, obsExportsIsShowing} from "./ui/exports.js"
-import {initForge, obsForgeIsShowing} from "./ui/forge.js"
+import {initExports, obsExportsIsShowing, closeExports} from "./ui/exports.js"
+import {initForge, obsForgeIsShowing, closeForge} from "./ui/forge.js"
 import {initGallery, obsGalleryIsShowing, closeGallery} from "./ui/circuits.js"
 import {initUndoRedo} from "./ui/undo.js"
 import {initClear} from "./ui/clear.js"
@@ -48,9 +48,19 @@ import {GatePainting} from "./draw/GatePainting.js"
 import {GATE_CIRCUIT_DRAWER} from "./ui/DisplayedCircuit.js"
 import {GateColumn} from "./circuit/GateColumn.js";
 import {Point} from "./math/Point.js";
-import {initImports} from "./ui/imports.js";
+import {initImports, closeImports} from "./ui/imports.js";
 import {initImageExports} from "./ui/imageExports.js";
 import StepByStepInspector from "./ui/stepBystepInspector.js";
+
+if (typeof window !== "undefined" && !window.__quirk_overlay_reset_bound) {
+    window.__quirk_overlay_reset_bound = true;
+    window.addEventListener("quirk-reset-overlays", () => {
+        closeGallery();
+        closeExports();
+        closeForge();
+        closeImports();
+    });
+}
 
 initSerializer(
     GatePainting.LABEL_DRAWER,

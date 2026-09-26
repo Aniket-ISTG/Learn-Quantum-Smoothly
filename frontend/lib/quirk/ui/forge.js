@@ -38,6 +38,7 @@ import {Util} from "../base/Util.js"
 
 const forgeIsVisible = new ObservableValue(false);
 const obsForgeIsShowing = forgeIsVisible.observable().whenDifferent();
+const closeForge = () => forgeIsVisible.set(false);
 
 /**
  * @param {!Revision} revision
@@ -493,4 +494,4 @@ function parseUserGateFromCircuitRange(circuit, colRangeText, wireRangeText, nam
         gate;
 }
 
-export {initForge, obsForgeIsShowing, parseUserRotation, parseUserMatrix, parseUserGateFromCircuitRange}
+export {initForge, closeForge, obsForgeIsShowing, parseUserRotation, parseUserMatrix, parseUserGateFromCircuitRange}

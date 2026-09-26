@@ -22,6 +22,7 @@ export function QuirkCircuit({
   const [error, setError] = useState<string | null>(null);
   const [showAdvancedGates, setShowAdvancedGates] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
+  const [isAnyPanelOpen, setIsAnyPanelOpen] = useState(false);
 
   useEffect(() => {
     const savedValue = localStorage.getItem("quirk_show_all_gates") === "true";
@@ -117,19 +118,76 @@ export function QuirkCircuit({
   }, []);
 
   useEffect(() => {
+    const panelIds = ["circuits-div", "export-div", "import-div", "gate-forge-div"];
+    const syncOpenState = () => {
+      const activePanel = panelIds.find((id) => {
+        const panel = document.getElementById(id);
+        return !!panel && panel.style.display !== "none";
+      });
+      setIsAnyPanelOpen(Boolean(activePanel));
+    };
+
+    syncOpenState();
+
+    const observer = new MutationObserver(() => {
+      syncOpenState();
+    });
+
+    panelIds.forEach((id) => {
+      const panel = document.getElementById(id);
+      if (panel) {
+        observer.observe(panel, { attributes: true, attributeFilter: ["style", "class"] });
+      }
+    });
+
+    const blockOutsideInteractions = (event: Event) => {
+      const activePanelId = panelIds.find((id) => {
+        const panel = document.getElementById(id);
+        return !!panel && panel.style.display !== "none";
+      });
+
+      if (!activePanelId) return;
+
+      const activePanel = document.getElementById(activePanelId);
+      const target = event.target as HTMLElement | null;
+      if (!activePanel || !target) return;
+
+      const isWithinActivePanel = activePanel.contains(target) || target.closest("[data-floating-panel]") === activePanel;
+      if (!isWithinActivePanel) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    document.addEventListener("pointerdown", blockOutsideInteractions, true);
+    document.addEventListener("click", blockOutsideInteractions, true);
+    document.addEventListener("keydown", (event) => {
+      if (isAnyPanelOpen && event.key === "Escape") {
+        panelIds.forEach((id) => {
+          const panel = document.getElementById(id);
+          if (panel) panel.style.display = "none";
+        });
+      }
+    });
+
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("pointerdown", blockOutsideInteractions, true);
+      document.removeEventListener("click", blockOutsideInteractions, true);
+    };
+  }, [isAnyPanelOpen, reloadKey]);
+
+  useEffect(() => {
     const saveButton = document.getElementById("download-options-button");
     const saveMenu = document.getElementById("download-options-menu");
-    const themeButton = document.getElementById("ui-settings-button");
-    const themeMenu = document.getElementById("ui-settings-menu");
 
-    if (!saveButton || !saveMenu || !themeButton || !themeMenu) {
+    if (!saveButton || !saveMenu) {
       return;
     }
 
-    const toggleMenu = (button: HTMLElement, menu: HTMLElement, sibling?: HTMLElement) => {
+    const toggleMenu = (button: HTMLElement, menu: HTMLElement) => {
       const shouldOpen = menu.style.display !== "block";
       menu.style.display = shouldOpen ? "block" : "none";
-      if (sibling) sibling.style.display = "none";
       if (shouldOpen) {
         const rect = button.getBoundingClientRect();
         menu.style.position = "absolute";
@@ -138,36 +196,25 @@ export function QuirkCircuit({
       }
     };
 
-    const closeMenus = (event: MouseEvent) => {
+    const closeMenu = (event: MouseEvent) => {
       const target = event.target as Node;
       if (!saveButton.contains(target) && !saveMenu.contains(target)) {
         saveMenu.style.display = "none";
-      }
-      if (!themeButton.contains(target) && !themeMenu.contains(target)) {
-        themeMenu.style.display = "none";
       }
     };
 
     const saveClickHandler = (event: Event) => {
       event.preventDefault();
       event.stopPropagation();
-      toggleMenu(saveButton, saveMenu, themeMenu);
-    };
-
-    const themeClickHandler = (event: Event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleMenu(themeButton, themeMenu, saveMenu);
+      toggleMenu(saveButton, saveMenu);
     };
 
     saveButton.addEventListener("click", saveClickHandler);
-    themeButton.addEventListener("click", themeClickHandler);
-    document.addEventListener("click", closeMenus);
+    document.addEventListener("click", closeMenu);
 
     return () => {
       saveButton.removeEventListener("click", saveClickHandler);
-      themeButton.removeEventListener("click", themeClickHandler);
-      document.removeEventListener("click", closeMenus);
+      document.removeEventListener("click", closeMenu);
     };
   }, [reloadKey]);
 
@@ -241,7 +288,7 @@ export function QuirkCircuit({
       )}
 
       {/* Main Quirk-E Top Navigation & Action Controls */}
-      <div id="inspectorDiv" style={{ display: "none" }} className="relative z-20 w-full border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 py-2.5">
+      <div id="inspectorDiv" style={{ display: "none", pointerEvents: isAnyPanelOpen ? "none" : "auto" }} className="relative z-20 w-full border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 py-2.5">
         <div id="menu-row" className="relative z-30 flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Left Group: Circuit Operations */}
           <div className="flex flex-wrap items-center gap-1.5">
@@ -313,6 +360,12 @@ export function QuirkCircuit({
                   onChange={(event) => {
                     const nextValue = event.target.checked;
 
+                    window.dispatchEvent(new Event("quirk-reset-overlays"));
+                    document.querySelectorAll("[data-floating-panel]").forEach((panel) => {
+                      const el = panel as HTMLElement;
+                      el.style.display = "none";
+                    });
+
                     localStorage.setItem("quirk_show_all_gates", String(nextValue));
                     setShowAdvancedGates(nextValue);
                     setIsLoaded(false);
@@ -360,17 +413,15 @@ export function QuirkCircuit({
               <button
                 type="button"
                 id="download-options-button"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white text-slate-700 shadow-sm hover:bg-slate-100 transition"
                 title="Download Circuit Image or PDF"
                 onClick={(event) => {
                   event.preventDefault();
                   event.stopPropagation();
                   const menu = document.getElementById("download-options-menu");
-                  const themeMenu = document.getElementById("ui-settings-menu");
                   if (!menu) return;
                   const shouldOpen = menu.style.display !== "block";
                   menu.style.display = shouldOpen ? "block" : "none";
-                  if (themeMenu) themeMenu.style.display = "none";
                   if (shouldOpen) {
                     const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
                     menu.style.position = "absolute";
@@ -379,84 +430,36 @@ export function QuirkCircuit({
                   }
                 }}
               >
-                <i className="fa-solid fa-download text-[11px]" />
+                <i className="fa-solid fa-download text-[11px] text-slate-700" />
                 <span>Save</span>
               </button>
               <div
                 id="download-options-menu"
                 style={{ display: "none" }}
-                className="absolute right-0 top-full mt-1.5 z-50 min-w-[150px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-2 shadow-xl"
-              >
-                <button id="export-png-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200">
-                  Export PNG
-                </button>
-                <button id="export-svg-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200">
-                  Export SVG
-                </button>
-                <button id="export-pdf-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200">
-                  Export PDF
-                </button>
-                <button id="export-jpg-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200">
-                  Export JPG
-                </button>
-                <button id="export-webp-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 text-xs font-medium text-slate-700 dark:text-slate-200">
-                  Export WebP
-                </button>
-              </div>
-            </div>
-
-            <div className="relative">
-              <button
-                type="button"
-                id="ui-settings-button"
-                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
-                title="Simulator Settings"
+                className="absolute right-0 top-full mt-1.5 z-50 min-w-[150px] rounded-xl border border-slate-200 bg-white p-2 shadow-xl"
                 onClick={(event) => {
-                  event.preventDefault();
-                  event.stopPropagation();
-                  const menu = document.getElementById("ui-settings-menu");
-                  const saveMenu = document.getElementById("download-options-menu");
-                  if (!menu) return;
-                  const shouldOpen = menu.style.display !== "block";
-                  menu.style.display = shouldOpen ? "block" : "none";
-                  if (saveMenu) saveMenu.style.display = "none";
-                  if (shouldOpen) {
-                    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
-                    menu.style.position = "absolute";
-                    menu.style.top = `${rect.bottom + 6}px`;
-                    menu.style.left = `${rect.left}px`;
+                  const target = event.target as HTMLElement;
+                  if (target.closest("button")) {
+                    const menu = document.getElementById("download-options-menu");
+                    if (menu) menu.style.display = "none";
                   }
                 }}
               >
-                <i className="fa-solid fa-gear text-[11px]" />
-                <span>Theme</span>
-              </button>
-              <div
-                id="ui-settings-menu"
-                style={{ display: "none" }}
-                className="absolute right-0 top-full mt-1.5 z-50 min-w-[200px] rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-3 shadow-xl"
-              >
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Color Mode</div>
-                <div className="flex items-center gap-2 mb-3">
-                  <button id="color-button" className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Vibrant
-                  </button>
-                  <button id="bw-button" className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    B&amp;W
-                  </button>
-                  <button id="yellow-button" className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Yellow
-                  </button>
-                </div>
-                <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Theme Mode</div>
-                <div className="flex items-center gap-2">
-                  <button id="sun-button" className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Light
-                  </button>
-                  <button id="moon-button" className="px-2.5 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 hover:bg-slate-100 dark:hover:bg-slate-700">
-                    Dark
-                  </button>
-                </div>
+                <button type="button" id="export-png-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 text-xs font-medium text-slate-700">
+                  Export PNG
+                </button>
+                <button type="button" id="export-svg-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 text-xs font-medium text-slate-700">
+                  Export SVG
+                </button>
+                <button type="button" id="export-pdf-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 text-xs font-medium text-slate-700">
+                  Export PDF
+                </button>
+                <button type="button" id="export-jpg-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 text-xs font-medium text-slate-700">
+                  Export JPG
+                </button>
+                <button type="button" id="export-webp-button" className="w-full text-left px-3 py-1.5 rounded-lg hover:bg-slate-100 text-xs font-medium text-slate-700">
+                  Export WebP
+                </button>
               </div>
             </div>
           </div>
@@ -468,7 +471,7 @@ export function QuirkCircuit({
         id="canvasDiv"
         tabIndex={0}
         className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white dark:bg-slate-900 focus:outline-none min-h-[680px]"
-        style={{ position: "relative" }}
+        style={{ position: "relative", pointerEvents: isAnyPanelOpen ? "none" : "auto" }}
       >
         <canvas id="drawCanvas" className="block outline-none" />
 
@@ -492,25 +495,26 @@ export function QuirkCircuit({
         <div id="circuit-inspector-overlay" style={{ position: "fixed", left: 0, top: 0, height: "100vh", width: "100vw" }} />
         <div
           id="circuit-inspector-menu"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 px-4 py-2.5 shadow-2xl backdrop-blur-md ring-1 ring-slate-200/70 dark:ring-slate-700/60"
+          className="fixed bottom-7 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200 bg-white/95 px-5 py-3.5 shadow-2xl ring-1 ring-slate-200"
+          style={{ minWidth: "440px" }}
         >
-          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Inspect:</span>
-          <button id="inspector-start" className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xs">
+          <span className="text-xs font-semibold text-slate-600 mr-1">Inspect:</span>
+          <button id="inspector-start" className="h-10 w-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-angles-left" />
           </button>
-          <button id="inspector-step-left" className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xs">
+          <button id="inspector-step-left" className="h-10 w-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-angle-left" />
           </button>
-          <button id="inspector-play" className="h-8 w-8 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center text-xs">
+          <button id="inspector-play" className="h-10 w-10 rounded-lg bg-cyan-600 hover:bg-cyan-700 text-white flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-play" />
           </button>
-          <button id="inspector-pause" style={{ display: "none" }} className="h-8 w-8 rounded-lg bg-amber-600 hover:bg-amber-700 text-white flex items-center justify-center text-xs">
+          <button id="inspector-pause" style={{ display: "none" }} className="h-10 w-10 rounded-lg bg-amber-500 hover:bg-amber-600 text-white flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-pause" />
           </button>
-          <button id="inspector-step-right" className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xs">
+          <button id="inspector-step-right" className="h-10 w-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-angle-right" />
           </button>
-          <button id="inspector-end" className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xs">
+          <button id="inspector-end" className="h-10 w-10 rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 flex items-center justify-center text-sm shadow-sm">
             <i className="fa-solid fa-angles-right" />
           </button>
         </div>
@@ -624,6 +628,7 @@ export function QuirkCircuit({
             <h3 id="export-title" className="text-base font-semibold text-slate-900 dark:text-white">Export Quantum Circuit</h3>
             <button
               onClick={() => {
+                window.dispatchEvent(new Event("quirk-reset-overlays"));
                 const el = document.getElementById("export-div");
                 if (el) el.style.display = "none";
               }}
@@ -702,6 +707,7 @@ export function QuirkCircuit({
             <h3 id="import-title" className="text-base font-semibold text-slate-900 dark:text-white">Import Quantum Circuit</h3>
             <button
               onClick={() => {
+                window.dispatchEvent(new Event("quirk-reset-overlays"));
                 const el = document.getElementById("import-div");
                 if (el) el.style.display = "none";
               }}
@@ -756,6 +762,7 @@ export function QuirkCircuit({
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Custom Gate Forge</h3>
             <button
               onClick={() => {
+                window.dispatchEvent(new Event("quirk-reset-overlays"));
                 const el = document.getElementById("gate-forge-div");
                 if (el) el.style.display = "none";
               }}

@@ -23,6 +23,7 @@ import CircuitConverter, { UnimplementedCircuitError, UnsupportedGateError } fro
 
 const exportsIsVisible = new ObservableValue(false);
 const obsExportsIsShowing = exportsIsVisible.observable().whenDifferent();
+const closeExports = () => exportsIsVisible.set(false);
 
 /**
  * @param {!Revision} revision
@@ -220,4 +221,4 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
     })();
 }
 
-export {initExports, obsExportsIsShowing}
+export {initExports, closeExports, obsExportsIsShowing}
