@@ -56,7 +56,7 @@ export default function PlaygroundPage() {
           </Link>
         </div>
 
-        <div className="relative w-full min-w-0 max-w-full overflow-hidden rounded-2xl border border-cyan-100 bg-white shadow-[0_8px_32px_rgba(6,182,212,0.08)]">
+        <div className="relative w-full min-w-0 max-w-full overflow-visible rounded-2xl border border-cyan-100 bg-white shadow-[0_8px_32px_rgba(6,182,212,0.08)]">
           {isQuirkLoading && (
             <div className="absolute inset-0 z-50 flex h-[680px] items-center justify-center bg-white/90 text-slate-500 backdrop-blur-[1px]">
               <div className="flex flex-col items-center gap-2">

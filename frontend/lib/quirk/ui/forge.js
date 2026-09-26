@@ -260,18 +260,26 @@ function initForge(revision, obsIsAnyOverlayShowing) {
             try {
                 let {gate} = parseEnteredCircuitGate();
                 let keys = gate.getUnmetContextKeys();
-                spanInputs.innerText = keys.size === 0 ?
-                    "(none)" :
-                    [...keys].map(e => e.replace("Input Range ", "").
-                                         replace("Input NO_DEFAULT Range ", "")).join(", ");
-                spanWeight.innerText = "" + gate.knownCircuit.gateWeight();
+                if (spanInputs) {
+                    spanInputs.innerText = keys.size === 0 ?
+                        "(none)" :
+                        [...keys].map(e => e.replace("Input Range ", "").
+                                             replace("Input NO_DEFAULT Range ", "")).join(", ");
+                }
+                if (spanWeight) {
+                    spanWeight.innerText = "" + gate.knownCircuit.gateWeight();
+                }
                 drawGate(painter, gate);
                 circuitButton.disabled = false;
                 latestGate.set({gate});
             } catch (ex) {
                 latestGate.set(undefined);
-                spanInputs.innerText = "(err)";
-                spanWeight.innerText = "(err)";
+                if (spanInputs) {
+                    spanInputs.innerText = "(err)";
+                }
+                if (spanWeight) {
+                    spanWeight.innerText = "(err)";
+                }
                 painter.printParagraph(
                     ex+"",
                     new Rect(0, 0, circuitCanvas.width, circuitCanvas.height),

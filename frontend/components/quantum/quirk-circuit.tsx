@@ -29,6 +29,149 @@ export function QuirkCircuit({
   }, []);
 
   useEffect(() => {
+    const panels = [
+      document.getElementById("circuits-div"),
+      document.getElementById("export-div"),
+      document.getElementById("import-div"),
+      document.getElementById("gate-forge-div"),
+    ];
+
+    let dragState: { panel: HTMLElement; startX: number; startY: number; originX: number; originY: number } | null = null;
+
+    panels.forEach((panel) => {
+      if (!panel) return;
+
+      panel.dataset.floatingPanel = "true";
+      panel.style.position = "fixed";
+      panel.style.left = "24px";
+      panel.style.top = "72px";
+      panel.style.width = "min(760px, calc(100vw - 48px))";
+      panel.style.maxWidth = "calc(100vw - 48px)";
+      panel.style.maxHeight = "calc(100vh - 96px)";
+      panel.style.height = "min(72vh, 720px)";
+      panel.style.resize = "both";
+      panel.style.overflow = "auto";
+      panel.style.zIndex = "50";
+      panel.style.borderRadius = "20px";
+      panel.style.boxShadow = "0 24px 80px rgba(15, 23, 42, 0.18)";
+      panel.style.background = "rgba(255,255,255,0.96)";
+      panel.style.border = "1px solid rgba(148, 163, 184, 0.35)";
+      panel.style.backdropFilter = "none";
+
+      const overlay = panel.querySelector("[data-overlay]") as HTMLElement | null;
+      if (overlay) {
+        overlay.style.pointerEvents = "none";
+        overlay.style.background = "transparent";
+        overlay.style.backdropFilter = "none";
+        overlay.style.filter = "none";
+      }
+
+      const header = panel.querySelector("[data-panel-header]") as HTMLElement | null;
+      if (header) {
+        header.style.cursor = "grab";
+        header.style.userSelect = "none";
+      }
+    });
+
+    const onPointerMove = (event: Event) => {
+      if (!dragState) return;
+      const pointerEvent = event as PointerEvent;
+      const nextLeft = Math.max(12, Math.min(window.innerWidth - 220, dragState.originX + (pointerEvent.clientX - dragState.startX)));
+      const nextTop = Math.max(12, Math.min(window.innerHeight - 160, dragState.originY + (pointerEvent.clientY - dragState.startY)));
+      dragState.panel.style.left = `${nextLeft}px`;
+      dragState.panel.style.top = `${nextTop}px`;
+    };
+
+    const onPointerUp = () => {
+      dragState = null;
+    };
+
+    const onPointerDown = (event: Event) => {
+      const pointerEvent = event as PointerEvent;
+      const header = pointerEvent.target as HTMLElement;
+      const panel = header.closest("[data-floating-panel]") as HTMLElement | null;
+      if (!panel) return;
+      dragState = {
+        panel,
+        startX: pointerEvent.clientX,
+        startY: pointerEvent.clientY,
+        originX: panel.offsetLeft,
+        originY: panel.offsetTop,
+      };
+    };
+
+    document.querySelectorAll("[data-panel-header]").forEach((header) => {
+      header.addEventListener("pointerdown", onPointerDown);
+    });
+
+    window.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    return () => {
+      document.querySelectorAll("[data-panel-header]").forEach((header) => {
+        header.removeEventListener("pointerdown", onPointerDown);
+      });
+      window.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("pointerup", onPointerUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const saveButton = document.getElementById("download-options-button");
+    const saveMenu = document.getElementById("download-options-menu");
+    const themeButton = document.getElementById("ui-settings-button");
+    const themeMenu = document.getElementById("ui-settings-menu");
+
+    if (!saveButton || !saveMenu || !themeButton || !themeMenu) {
+      return;
+    }
+
+    const toggleMenu = (button: HTMLElement, menu: HTMLElement, sibling?: HTMLElement) => {
+      const shouldOpen = menu.style.display !== "block";
+      menu.style.display = shouldOpen ? "block" : "none";
+      if (sibling) sibling.style.display = "none";
+      if (shouldOpen) {
+        const rect = button.getBoundingClientRect();
+        menu.style.position = "absolute";
+        menu.style.top = `${rect.bottom + 6}px`;
+        menu.style.left = `${rect.left}px`;
+      }
+    };
+
+    const closeMenus = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (!saveButton.contains(target) && !saveMenu.contains(target)) {
+        saveMenu.style.display = "none";
+      }
+      if (!themeButton.contains(target) && !themeMenu.contains(target)) {
+        themeMenu.style.display = "none";
+      }
+    };
+
+    const saveClickHandler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMenu(saveButton, saveMenu, themeMenu);
+    };
+
+    const themeClickHandler = (event: Event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMenu(themeButton, themeMenu, saveMenu);
+    };
+
+    saveButton.addEventListener("click", saveClickHandler);
+    themeButton.addEventListener("click", themeClickHandler);
+    document.addEventListener("click", closeMenus);
+
+    return () => {
+      saveButton.removeEventListener("click", saveClickHandler);
+      themeButton.removeEventListener("click", themeClickHandler);
+      document.removeEventListener("click", closeMenus);
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
     let quirkInstance: any = null;
     let isCancelled = false;
 
@@ -79,7 +222,7 @@ export function QuirkCircuit({
   }, [initialCircuit, onCircuitChange, reloadKey]);
 
   return (
-    <div ref={containerRef} className={`relative flex flex-col w-full min-w-0 max-w-full overflow-hidden bg-white dark:bg-slate-900 select-none ${className}`}>
+    <div ref={containerRef} className={`relative flex flex-col w-full min-w-0 max-w-full overflow-visible bg-white dark:bg-slate-900 select-none ${className}`}>
       {/* Loading state indicator */}
       {!isLoaded && !error && (
         <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
@@ -98,8 +241,8 @@ export function QuirkCircuit({
       )}
 
       {/* Main Quirk-E Top Navigation & Action Controls */}
-      <div id="inspectorDiv" style={{ display: "none" }} className="w-full border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 py-2.5">
-        <div id="menu-row" className="flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div id="inspectorDiv" style={{ display: "none" }} className="relative z-20 w-full border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/90 px-4 py-2.5">
+        <div id="menu-row" className="relative z-30 flex flex-wrap items-center justify-between gap-3 text-xs">
           {/* Left Group: Circuit Operations */}
           <div className="flex flex-wrap items-center gap-1.5">
             <button
@@ -215,9 +358,26 @@ export function QuirkCircuit({
 
             <div className="relative">
               <button
+                type="button"
                 id="download-options-button"
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                 title="Download Circuit Image or PDF"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const menu = document.getElementById("download-options-menu");
+                  const themeMenu = document.getElementById("ui-settings-menu");
+                  if (!menu) return;
+                  const shouldOpen = menu.style.display !== "block";
+                  menu.style.display = shouldOpen ? "block" : "none";
+                  if (themeMenu) themeMenu.style.display = "none";
+                  if (shouldOpen) {
+                    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+                    menu.style.position = "absolute";
+                    menu.style.top = `${rect.bottom + 6}px`;
+                    menu.style.left = `${rect.left}px`;
+                  }
+                }}
               >
                 <i className="fa-solid fa-download text-[11px]" />
                 <span>Save</span>
@@ -247,9 +407,26 @@ export function QuirkCircuit({
 
             <div className="relative">
               <button
+                type="button"
                 id="ui-settings-button"
                 className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition"
                 title="Simulator Settings"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  const menu = document.getElementById("ui-settings-menu");
+                  const saveMenu = document.getElementById("download-options-menu");
+                  if (!menu) return;
+                  const shouldOpen = menu.style.display !== "block";
+                  menu.style.display = shouldOpen ? "block" : "none";
+                  if (saveMenu) saveMenu.style.display = "none";
+                  if (shouldOpen) {
+                    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect();
+                    menu.style.position = "absolute";
+                    menu.style.top = `${rect.bottom + 6}px`;
+                    menu.style.left = `${rect.left}px`;
+                  }
+                }}
               >
                 <i className="fa-solid fa-gear text-[11px]" />
                 <span>Theme</span>
@@ -290,14 +467,14 @@ export function QuirkCircuit({
       <div
         id="canvasDiv"
         tabIndex={0}
-        className="w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white dark:bg-slate-900 focus:outline-none min-h-[680px]"
+        className="relative z-10 w-full min-w-0 max-w-full flex-1 overflow-x-auto overflow-y-hidden bg-white dark:bg-slate-900 focus:outline-none min-h-[680px]"
         style={{ position: "relative" }}
       >
         <canvas id="drawCanvas" className="block outline-none" />
 
         {/* Right-click Context Menu on Gates */}
         <div id="gate-context-menu" style={{ position: "absolute", display: "none", zIndex: 1000 }}>
-          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 p-1.5 shadow-2xl backdrop-blur-md">
+          <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 p-1.5 shadow-2xl backdrop-blur-md ring-1 ring-slate-200/70 dark:ring-slate-700/60">
             <button id="delete-gate-button" className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition">
               <i className="fa-solid fa-trash text-[11px]" />
               <span>Delete</span>
@@ -315,7 +492,7 @@ export function QuirkCircuit({
         <div id="circuit-inspector-overlay" style={{ position: "fixed", left: 0, top: 0, height: "100vh", width: "100vw" }} />
         <div
           id="circuit-inspector-menu"
-          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 px-4 py-2.5 shadow-2xl backdrop-blur-md"
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 rounded-2xl border border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-slate-800/95 px-4 py-2.5 shadow-2xl backdrop-blur-md ring-1 ring-slate-200/70 dark:ring-slate-700/60"
         >
           <span className="text-xs font-semibold text-slate-500 dark:text-slate-400 mr-1">Inspect:</span>
           <button id="inspector-start" className="h-8 w-8 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xs">
@@ -340,10 +517,10 @@ export function QuirkCircuit({
       </div>
 
       {/* Circuit Gallery (Examples) Modal */}
-      <div id="circuits-div" style={{ display: "none" }} className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div id="circuits-overlay" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
-        <div className="relative z-10 w-full max-w-3xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+      <div id="circuits-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
+        <div id="circuits-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
+        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
             <div className="flex items-center gap-2.5">
               <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 dark:bg-cyan-950 text-cyan-600">
                 <i className="fa-solid fa-atom text-base" />
@@ -364,74 +541,74 @@ export function QuirkCircuit({
           <div className="mt-5 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-1 text-sm">
             <div className="space-y-1.5">
               <div className="text-xs font-bold uppercase tracking-wider text-cyan-600 mb-2">Core Algorithms</div>
-              <a id="example-anchor-grover" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-anchor-grover" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Grover Search
               </a>
-              <a id="example-anchor-shor" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-anchor-shor" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Shor Period Finding
               </a>
-              <a id="example-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Quantum Fourier Transform (QFT)
               </a>
-              <a id="example-anchor-teleport" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-anchor-teleport" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Quantum Teleportation
               </a>
-              <a id="example-superdense-coding" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-superdense-coding" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Superdense Coding
               </a>
-              <a id="example-chsh-test" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-chsh-test" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Bell Inequality Test (CHSH)
               </a>
-              <a id="example-symmetry-break" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-symmetry-break" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Symmetry Breaking
               </a>
-              <a id="example-anchor-distill" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-anchor-distill" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Magic State Distillation
               </a>
-              <a id="example-addition" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-addition" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Reversible Quantum Addition
               </a>
-              <a id="example-anchor-delayed-eraser" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-anchor-delayed-eraser" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Quantum Delayed Choice Eraser
               </a>
-              <a id="example-schrodingers-cat" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-schrodingers-cat" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Schrödinger&apos;s Cat on 6 Qubits
               </a>
             </div>
 
             <div className="space-y-1.5">
               <div className="text-xs font-bold uppercase tracking-wider text-cyan-600 mb-2">Entanglement, Gates &amp; QFT</div>
-              <a id="example-epr-pair" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-epr-pair" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Bell State (EPR Pair)
               </a>
-              <a id="example-epr-pair-detailed" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-epr-pair-detailed" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Bell State (Detailed)
               </a>
-              <a id="example-ccnot" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-ccnot" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Toffoli (CCNOT) Gate
               </a>
-              <a id="example-ccnot-decomposition" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-ccnot-decomposition" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 Toffoli Decomposition
               </a>
-              <a id="example-two-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-two-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 2-Qubit QFT
               </a>
-              <a id="example-three-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-three-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 3-Qubit QFT
               </a>
-              <a id="example-four-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-four-qubit-qft" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 4-Qubit QFT
               </a>
-              <a id="example-right-shift" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-right-shift" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 State Right-Shift
               </a>
-              <a id="example-left-shift" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-left-shift" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 State Left-Shift
               </a>
-              <a id="example-optimized-state-5-qubits" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-optimized-state-5-qubits" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 5-Qubit Optimized State Shift
               </a>
-              <a id="example-optimized-state-6-qubits" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-slate-800 dark:text-slate-200 transition">
+              <a id="example-optimized-state-6-qubits" className="block p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-cyan-400 hover:bg-cyan-50/50 dark:hover:bg-cyan-950/20 cursor-pointer font-medium text-black dark:text-black transition">
                 6-Qubit Optimized State Shift
               </a>
             </div>
@@ -440,10 +617,10 @@ export function QuirkCircuit({
       </div>
 
       {/* Export Dialog Modal */}
-      <div id="export-div" style={{ display: "none" }} className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div id="export-overlay" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
-        <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div id="export-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
+        <div id="export-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
+        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <h3 id="export-title" className="text-base font-semibold text-slate-900 dark:text-white">Export Quantum Circuit</h3>
             <button
               onClick={() => {
@@ -518,10 +695,10 @@ export function QuirkCircuit({
       </div>
 
       {/* Import Dialog Modal */}
-      <div id="import-div" style={{ display: "none" }} className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div id="import-overlay" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
-        <div className="relative z-10 w-full max-w-xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div id="import-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
+        <div id="import-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
+        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <h3 id="import-title" className="text-base font-semibold text-slate-900 dark:text-white">Import Quantum Circuit</h3>
             <button
               onClick={() => {
@@ -572,10 +749,10 @@ export function QuirkCircuit({
       </div>
 
       {/* Gate Forge Modal */}
-      <div id="gate-forge-div" style={{ display: "none" }} className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <div id="gate-forge-overlay" className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" />
-        <div className="relative z-10 w-full max-w-2xl rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
-          <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+      <div id="gate-forge-div" data-floating-panel style={{ display: "none" }} className="fixed z-50">
+        <div id="gate-forge-overlay" data-overlay className="fixed inset-0 pointer-events-none bg-transparent" />
+        <div className="relative z-10 rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+          <div data-panel-header className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
             <h3 className="text-base font-semibold text-slate-900 dark:text-white">Custom Gate Forge</h3>
             <button
               onClick={() => {
