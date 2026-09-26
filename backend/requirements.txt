@@ -1,7 +1,0 @@
-qiskit
-qiskit-aer
-pennylane
-cirq
-jupyter
-nbconvert
-ipykernel

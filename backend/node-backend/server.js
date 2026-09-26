@@ -1,21 +1,6 @@
 const fs = require("fs");
-const fsPromises = require("fs/promises");
 const path = require("path");
-const os = require("os");
 const http = require("http");
-const { execFile } = require("child_process");
-const { promisify } = require("util");
-
-const execFileAsync = promisify(execFile);
-
-// ========================================
-// Docker configuration
-// ========================================
-
-const DOCKER_IMAGE = "quantum-python";
-const DOCKER_MEMORY = "512m";
-const DOCKER_CPUS = "1";
-const DOCKER_TIMEOUT = 20000;
 
 // ========================================
 // Load environment variables
@@ -45,6 +30,16 @@ if (fs.existsSync(envPath)) {
     }
   }
 }
+
+// ========================================
+// Execution service configuration
+// ========================================
+
+const EXECUTION_SERVICE_URL = (
+  process.env.EXECUTION_SERVICE_URL || ""
+).replace(/\/+$/, "");
+
+const EXECUTION_TIMEOUT = 20000;
 
 // ========================================
 // Import AI modules
@@ -77,7 +72,8 @@ const {
 // ========================================
 
 const PORT = Number(process.env.PORT || 4000);
-const FRONTEND_ORIGIN = "http://localhost:3000";
+const FRONTEND_ORIGIN =
+  process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 
 // ========================================
 // CORS
@@ -452,317 +448,205 @@ async function handleLearningPath(req, res) {
 // Docker Python Runner
 // ========================================
 
-async function runDockerPython(
-  tempDir,
-  pythonArgs,
-  timeout = DOCKER_TIMEOUT
+async function executeRemotePython(
+  code,
+  framework,
+  timeout = EXECUTION_TIMEOUT
 ) {
-  const dockerArgs = [
-    "run",
-    "--rm",
+  if (!EXECUTION_SERVICE_URL) {
+    throw new Error(
+      "EXECUTION_SERVICE_URL is not configured."
+    );
+  }
 
-    // No internet access
-    "--network",
-    "none",
+  const controller = new AbortController();
 
-    // CPU limit
-    "--cpus",
-    DOCKER_CPUS,
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeout);
 
-    // Memory limit
-    "--memory",
-    DOCKER_MEMORY,
+  try {
+    const response = await fetch(
+      `${EXECUTION_SERVICE_URL}/execute`,
+      {
+        method: "POST",
 
-    // Process limit
-    "--pids-limit",
-    "128",
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-    // Mount temporary workspace
-    "-v",
-    `${tempDir}:/workspace`,
+        body: JSON.stringify({
+          code,
+          framework,
+        }),
 
-    // Docker image
-    DOCKER_IMAGE,
+        signal: controller.signal,
+      }
+    );
 
-    // Python
-    "python",
+    const rawText = await response.text();
 
-    // UTF-8
-    "-X",
-    "utf8",
+    let payload = {};
 
-    ...pythonArgs,
-  ];
-
-  return execFileAsync(
-    "docker",
-    dockerArgs,
-    {
-      timeout,
-      maxBuffer: 5 * 1024 * 1024,
-      windowsHide: true,
+    try {
+      payload = rawText
+        ? JSON.parse(rawText)
+        : {};
+    } catch {
+      payload = {
+        output: rawText,
+      };
     }
-  );
-}
 
+    if (!response.ok) {
+      throw new Error(
+        payload?.error ||
+        payload?.message ||
+        payload?.stderr ||
+        `Execution service returned HTTP ${response.status}`
+      );
+    }
+
+    return {
+      output:
+        payload?.output ??
+        payload?.stdout ??
+        "",
+
+      warning:
+        payload?.warning ??
+        payload?.stderr ??
+        "",
+
+      error:
+        payload?.error ??
+        "",
+
+      raw: payload,
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Quantum execution service timed out."
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
 // ========================================
 // Execute Jupyter Notebook
 // ========================================
-
 async function executeNotebook(
   notebook,
-  tempDir,
+  _unused,
   framework
 ) {
-  const notebookPath = path.join(
-    tempDir,
-    "main.ipynb"
-  );
+  if (!EXECUTION_SERVICE_URL) {
+    throw new Error(
+      "EXECUTION_SERVICE_URL is not configured."
+    );
+  }
 
-  const executedPath = path.join(
-    tempDir,
-    "executed.ipynb"
-  );
+  const controller = new AbortController();
 
-  // Save notebook
-  fs.writeFileSync(
-    notebookPath,
-    JSON.stringify(
-      notebook,
-      null,
-      2
-    ),
-    "utf8"
-  );
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, EXECUTION_TIMEOUT);
 
   try {
-    const {
-      stdout,
-      stderr,
-    } = await runDockerPython(
-      tempDir,
-      [
-        "-m",
-        "jupyter",
-        "nbconvert",
-        "--to",
-        "notebook",
-        "--execute",
+    const response = await fetch(
+      `${EXECUTION_SERVICE_URL}/execute-notebook`,
+      {
+        method: "POST",
 
-        "--ExecutePreprocessor.timeout=30",
+        headers: {
+          "Content-Type": "application/json",
+        },
 
-        "--output",
-        "executed.ipynb",
+        body: JSON.stringify({
+          notebook,
+          framework,
+        }),
 
-        "--output-dir",
-        "/workspace",
-
-        "/workspace/main.ipynb",
-      ],
-      60000
+        signal: controller.signal,
+      }
     );
 
-    // ========================================
-    // Read executed notebook
-    // ========================================
+    const rawText = await response.text();
 
-    if (!fs.existsSync(executedPath)) {
+    let payload = {};
+
+    try {
+      payload = rawText
+        ? JSON.parse(rawText)
+        : {};
+    } catch {
       throw new Error(
-        stderr?.trim() ||
-        stdout?.trim() ||
-        "Executed notebook was not created."
+        rawText ||
+        "Invalid response from execution service."
       );
     }
 
-    const executedNotebook =
-      JSON.parse(
-        fs.readFileSync(
-          executedPath,
-          "utf8"
-        )
+    if (!response.ok) {
+      throw new Error(
+        payload?.error ||
+        payload?.message ||
+        payload?.stderr ||
+        `Execution service returned HTTP ${response.status}`
       );
-
-    // ========================================
-    // Extract cell outputs
-    // ========================================
-
-    const cells =
-      executedNotebook.cells.map(
-        (cell) => {
-          let output = "";
-          let cellError = "";
-
-          // Ignore markdown cells
-          if (
-            cell.cell_type !== "code"
-          ) {
-            return {
-              output: "",
-              error: "",
-            };
-          }
-
-          for (
-            const item of
-              cell.outputs || []
-          ) {
-            // -----------------------------
-            // print() output
-            // -----------------------------
-
-            if (
-              item.output_type ===
-              "stream"
-            ) {
-              output +=
-                Array.isArray(
-                  item.text
-                )
-                  ? item.text.join("")
-                  : item.text || "";
-            }
-
-            // -----------------------------
-            // Expression output
-            // -----------------------------
-
-            if (
-              item.output_type ===
-              "execute_result"
-            ) {
-              const text =
-                item.data?.[
-                  "text/plain"
-                ];
-
-              if (text) {
-                output +=
-                  Array.isArray(text)
-                    ? text.join("")
-                    : text;
-              }
-            }
-
-            // -----------------------------
-            // display() output
-            // -----------------------------
-
-            if (
-              item.output_type ===
-              "display_data"
-            ) {
-              const text =
-                item.data?.[
-                  "text/plain"
-                ];
-
-              if (text) {
-                output +=
-                  Array.isArray(text)
-                    ? text.join("")
-                    : text;
-              }
-            }
-
-            // -----------------------------
-            // Python error
-            // -----------------------------
-
-            if (
-              item.output_type ===
-              "error"
-            ) {
-              cellError =
-                Array.isArray(
-                  item.traceback
-                )
-                  ? item.traceback.join(
-                      "\n"
-                    )
-                  : item.traceback || "";
-
-              if (!cellError) {
-                cellError =
-                  `${
-                    item.ename ||
-                    "Error"
-                  }: ${
-                    item.evalue ||
-                    "Execution failed"
-                  }`;
-              }
-            }
-          }
-
-          return {
-            output:
-              output.trim(),
-
-            error:
-              cellError.trim(),
-          };
-        }
-      );
+    }
 
     return {
-      cells,
+      cells: Array.isArray(payload.cells)
+        ? payload.cells
+        : [],
 
       stdout:
-        stdout?.trim() || "",
+        payload.stdout || "",
 
       stderr:
-        stderr?.trim() || "",
+        payload.stderr || "",
     };
   } catch (error) {
-    throw new Error(
-      error?.stderr?.trim() ||
-      error?.stdout?.trim() ||
-      error?.message ||
-      `${framework} notebook execution failed.`
-    );
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Quantum notebook execution service timed out."
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
   }
 }
+
 
 // ========================================
 // Quantum Code Execution Handler
 // ========================================
 
-async function handleRunCode(
-  req,
-  res
-) {
+async function handleRunCode(req, res) {
   let body;
 
   try {
-    body =
-      await readRequestBody(req);
+    body = await readRequestBody(req);
   } catch {
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          "Unable to read request body.",
-      }
-    );
+    return sendJson(res, 400, {
+      error: "Unable to read request body.",
+    });
   }
 
   let payload;
 
   try {
-    payload =
-      JSON.parse(
-        body || "{}"
-      );
+    payload = JSON.parse(body || "{}");
   } catch {
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          "Invalid JSON request.",
-      }
-    );
+    return sendJson(res, 400, {
+      error: "Invalid JSON request.",
+    });
   }
 
   const {
@@ -777,17 +661,11 @@ async function handleRunCode(
   // Validate language
   // ========================================
 
-  if (
-    language !== "python"
-  ) {
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          "Only Python is supported in the Quantum Code Lab.",
-      }
-    );
+  if (language !== "python") {
+    return sendJson(res, 400, {
+      error:
+        "Only Python is supported in the Quantum Code Lab.",
+    });
   }
 
   // ========================================
@@ -798,14 +676,10 @@ async function handleRunCode(
     fileType !== "python" &&
     fileType !== "notebook"
   ) {
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          "Unsupported file type. Use python or notebook.",
-      }
-    );
+    return sendJson(res, 400, {
+      error:
+        "Unsupported file type. Use python or notebook.",
+    });
   }
 
   // ========================================
@@ -818,173 +692,82 @@ async function handleRunCode(
     "cirq",
   ];
 
-  if (
-    !allowedFrameworks.includes(
-      framework
-    )
-  ) {
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          "Unsupported framework. Choose Qiskit, PennyLane, or Cirq.",
-      }
-    );
+  if (!allowedFrameworks.includes(framework)) {
+    return sendJson(res, 400, {
+      error:
+        "Unsupported framework. Choose Qiskit, PennyLane, or Cirq.",
+    });
   }
 
   // ========================================
   // JUPYTER NOTEBOOK
   // ========================================
 
-  if (
-    fileType === "notebook"
-  ) {
+  if (fileType === "notebook") {
     if (
       !notebook ||
-      typeof notebook !==
-        "object"
+      typeof notebook !== "object"
     ) {
-      return sendJson(
-        res,
-        400,
-        {
-          error:
-            "Notebook data is required.",
-        }
-      );
+      return sendJson(res, 400, {
+        error: "Notebook data is required.",
+      });
     }
 
-    if (
-      !Array.isArray(
-        notebook.cells
-      )
-    ) {
-      return sendJson(
-        res,
-        400,
-        {
-          error:
-            "Notebook cells are required.",
-        }
-      );
+    if (!Array.isArray(notebook.cells)) {
+      return sendJson(res, 400, {
+        error: "Notebook cells are required.",
+      });
     }
 
-    if (
-      notebook.cells.length >
-      50
-    ) {
-      return sendJson(
-        res,
-        400,
-        {
-          error:
-            "Notebook cannot contain more than 50 cells.",
-        }
-      );
+    if (notebook.cells.length > 50) {
+      return sendJson(res, 400, {
+        error:
+          "Notebook cannot contain more than 50 cells.",
+      });
     }
-
-    const tempDir =
-      path.join(
-        os.tmpdir(),
-        `qubit-lab-notebook-${Date.now()}-${Math.random()
-          .toString(36)
-          .slice(2, 8)}`
-      );
 
     try {
-      fs.mkdirSync(
-        tempDir,
-        {
-          recursive: true,
-        }
-      );
-
       console.log(
-        `Running ${framework} Jupyter notebook inside Docker...`
+        `Running ${framework} Jupyter notebook on remote execution service...`
       );
 
-      const result =
-        await executeNotebook(
-          notebook,
-          tempDir,
-          framework
-        );
-
-      // Cleanup
-      try {
-        fs.rmSync(
-          tempDir,
-          {
-            recursive: true,
-            force: true,
-          }
-        );
-      } catch (
-        cleanupError
-      ) {
-        console.error(
-          "Notebook cleanup error:",
-          cleanupError
-        );
-      }
-
-      return sendJson(
-        res,
-        200,
-        {
-          cells:
-            result.cells,
-
-          output:
-            result.stdout,
-
-          warning:
-            result.stderr,
-
-          framework,
-
-          fileType:
-            "notebook",
-
-          execution:
-            "docker",
-        }
+      const result = await executeNotebook(
+        notebook,
+        null,
+        framework
       );
+
+      return sendJson(res, 200, {
+        cells: result.cells,
+
+        output: result.stdout || "",
+
+        warning: result.stderr || "",
+
+        framework,
+
+        fileType: "notebook",
+
+        execution: "remote",
+      });
     } catch (error) {
-      try {
-        fs.rmSync(
-          tempDir,
-          {
-            recursive: true,
-            force: true,
-          }
-        );
-      } catch {}
-
       console.error(
-        "Notebook execution error:",
+        "Remote notebook execution error:",
         error
       );
 
-      return sendJson(
-        res,
-        400,
-        {
-          error:
-            error instanceof Error
-              ? error.message
-              : "Notebook execution failed.",
+      return sendJson(res, 400, {
+        error:
+          error instanceof Error
+            ? error.message
+            : "Notebook execution failed.",
 
-          framework,
+        framework,
 
-          fileType:
-            "notebook",
+        fileType: "notebook",
 
-          execution:
-            "docker",
-        }
-      );
+        execution: "remote",
+      });
     }
   }
 
@@ -993,160 +776,71 @@ async function handleRunCode(
   // ========================================
 
   if (
-    typeof code !==
-      "string" ||
+    typeof code !== "string" ||
     !code.trim()
   ) {
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          "Code is required.",
-      }
-    );
+    return sendJson(res, 400, {
+      error: "Code is required.",
+    });
   }
 
   // ========================================
-  // Create temporary directory
+  // Execute on remote quantum executor
   // ========================================
 
-  const tempDir =
-    path.join(
-      os.tmpdir(),
-      `qubit-lab-${Date.now()}-${Math.random()
-        .toString(36)
-        .slice(2, 8)}`
-    );
-
-  const filePath =
-    path.join(
-      tempDir,
-      "main.py"
-    );
-
   try {
-    fs.mkdirSync(
-      tempDir,
-      {
-        recursive: true,
-      }
-    );
-
-    fs.writeFileSync(
-      filePath,
-      code,
-      "utf8"
-    );
-
     console.log(
-      `Running ${framework} Python program inside Docker...`
+      `Running ${framework} Python program on remote execution service...`
     );
 
-    // ========================================
-    // Execute inside Docker
-    // ========================================
-
-    const {
-      stdout,
-      stderr,
-    } =
-      await runDockerPython(
-        tempDir,
-        [
-          "/workspace/main.py",
-        ],
-        DOCKER_TIMEOUT
-      );
-
-    // ========================================
-    // Cleanup
-    // ========================================
-
-    try {
-      fs.rmSync(
-        tempDir,
-        {
-          recursive: true,
-          force: true,
-        }
-      );
-    } catch (
-      cleanupError
-    ) {
-      console.error(
-        "Temporary file cleanup error:",
-        cleanupError
-      );
-    }
+    const result = await executeRemotePython(
+      code,
+      framework,
+      EXECUTION_TIMEOUT
+    );
 
     // ========================================
     // Success
     // ========================================
 
-    return sendJson(
-      res,
-      200,
-      {
-        output:
-          stdout?.trim() ||
-          "Program executed successfully.",
+    return sendJson(res, 200, {
+      output:
+        result.output?.trim() ||
+        "Program executed successfully.",
 
-        warning:
-          stderr?.trim() ||
-          "",
+      warning:
+        result.warning?.trim() ||
+        "",
 
-        framework,
+      framework,
 
-        fileType:
-          "python",
+      fileType: "python",
 
-        execution:
-          "docker",
-      }
-    );
+      execution: "remote",
+    });
   } catch (error) {
     // ========================================
-    // Cleanup after failure
+    // Remote execution failure
     // ========================================
 
-    try {
-      fs.rmSync(
-        tempDir,
-        {
-          recursive: true,
-          force: true,
-        }
-      );
-    } catch {}
-
     console.error(
-      `${framework} Docker execution error:`,
+      `${framework} remote execution error:`,
       error
     );
 
-    return sendJson(
-      res,
-      400,
-      {
-        error:
-          error?.stderr?.trim() ||
-          error?.message ||
-          "Python execution failed.",
+    return sendJson(res, 400, {
+      error:
+        error?.message ||
+        "Python execution failed.",
 
-        output:
-          error?.stdout?.trim() ||
-          "",
+      output: "",
 
-        framework,
+      framework,
 
-        fileType:
-          "python",
+      fileType: "python",
 
-        execution:
-          "docker",
-      }
-    );
+      execution: "remote",
+    });
   }
 }
 
@@ -1190,6 +884,23 @@ const server =
         // ========================================
         // Code execution endpoint
         // ========================================
+        
+
+
+        // ========================================
+        // Health check
+        // ========================================
+
+        if (
+          url.pathname === "/health" &&
+          req.method === "GET"
+        ) {
+          return sendJson(res, 200, {
+            status: "ok",
+            executionServiceConfigured:
+              Boolean(EXECUTION_SERVICE_URL),
+          });
+        }
 
         if (
           url.pathname ===
@@ -1313,11 +1024,6 @@ const server =
 // Start server
 // ========================================
 
-server.listen(
-  PORT,
-  () => {
-    console.log(
-      `AI backend running on http://localhost:${PORT}`
-    );
-  }
-);
+server.listen(PORT, "0.0.0.0", () => {
+  console.log(`AI backend running on port ${PORT}`);
+});

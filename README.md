@@ -27,10 +27,15 @@ An interactive quantum computing learning platform designed to help beginners le
 
 ### Backend
 
-- Node.js
-- JavaScript
-- HTTP API
-- Groq API
+- **Node.js AI & Gateway Backend (`backend/node-backend`)**:
+  - Node.js (v18+)
+  - JavaScript
+  - Native HTTP server
+  - Groq API (LLM inference)
+- **Quantum Execution Service (`backend/executor`)**:
+  - Python 3.11
+  - FastAPI & Uvicorn
+  - Docker containerization
 
 ### Quantum & Execution
 
@@ -40,41 +45,39 @@ An interactive quantum computing learning platform designed to help beginners le
 - Cirq
 - Python 3.11
 - Docker
-- Jupyter
-- nbconvert
+- Jupyter & nbconvert
 
 ## Project Architecture
 
 ```text
 User
   ↓
-Next.js Frontend
+Next.js Frontend (port 3000)
   ↓
-Node.js Backend
-  ├── AI Features
-  └── Code Execution
+Node.js Backend (port 4000)
+  ├── AI Features (Groq API)
+  └── Code Execution Proxy (/api/run)
         ↓
-      Docker
-        ↓
-Python Quantum Environment
-  ├── Qiskit
-  ├── Qiskit Aer
+Quantum Execution Service (port 10000 / Render Cloud)
+  ├── FastAPI (executor.py)
+  ├── Qiskit & Qiskit Aer
   ├── PennyLane
   └── Cirq
 ```
 
 ## Prerequisites
 
-Install the following:
+Install the following on your machine:
 
-- Node.js 20+
-- npm
-- Docker Desktop
-- WSL 2
-- Virtualization enabled
-- Groq API key
+- **Node.js 18+** (recommended Node 20+)
+- **npm**
+- **Docker Desktop** (optional if using the cloud-hosted execution service)
+- **WSL 2** (if on Windows)
+- **Groq API key** (free from [console.groq.com](https://console.groq.com))
 
-## Installation
+---
+
+## Installation & Setup
 
 ### 1. Clone the Repository
 
@@ -83,261 +86,162 @@ git clone <YOUR_REPOSITORY_URL>
 cd Learn-Quantum-Smoothly
 ```
 
-### 2. Install Frontend Dependencies
+### 2. Setup Node Backend (`backend/node-backend`)
 
-```bash
-cd frontend
-npm install
-```
+The Node backend handles AI tutoring, circuit analysis, and proxies code execution requests to the quantum executor.
 
-### 3. Install Backend Dependencies
+1. Navigate to the node backend folder:
+   ```bash
+   cd backend/node-backend
+   ```
 
-```bash
-cd ../backend
-npm install
-```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-### 4. Configure Environment Variables
+3. Create the environment configuration file `.env.local`:
+   ```bash
+   touch .env.local
+   ```
 
-Create:
+4. Add the following variables to `backend/node-backend/.env.local`:
+   ```env
+   # Server Port
+   PORT=4000
 
-```text
-backend/.env.local
-```
+   # Groq API Key for AI Quantum Tutor & Circuit Analysis
+   GROQ_API_KEY=your_groq_api_key_here
 
-Add:
+   # Quantum Code Execution Service URL:
+   # Option A: Cloud-hosted execution service (no local Docker needed)
+   EXECUTION_SERVICE_URL=https://quantum-executor.onrender.com
 
-```env
-PORT=4000
-GROQ_API_KEY=your_api_key_here
-```
+   # Option B: Local Docker execution service (if running backend/executor locally)
+   # EXECUTION_SERVICE_URL=http://localhost:10000
 
-> Never commit `.env.local` to GitHub.
+   # Frontend Origin for CORS
+   FRONTEND_ORIGIN=http://localhost:3000
+   ```
 
----
-
-# Docker Setup
-
-Docker is used to run the Python quantum computing environment separately from the user's computer.
-
-## 1. Install Docker Desktop
-
-Download and install Docker Desktop:
-
-https://www.docker.com/products/docker-desktop/
-
-Make sure:
-
-- WSL 2 is enabled
-- Hardware virtualization is enabled
-- Docker Desktop is running
-
-You can verify Docker from the terminal:
-
-```bash
-docker --version
-```
-
-You should see something similar to:
-
-```text
-Docker version 29.x.x
-```
-
-Test Docker:
-
-```bash
-docker run hello-world
-```
-
-If you see:
-
-```text
-Hello from Docker!
-```
-
-Docker is working correctly.
+> [!WARNING]
+> Never commit `.env.local` to version control.
 
 ---
 
-## 2. Build the Quantum Python Image
+### 3. Setup Frontend (`frontend`)
 
-Open a terminal and go to the backend:
+1. In a new terminal, navigate to the frontend folder:
+   ```bash
+   cd frontend
+   ```
 
-```bash
-cd backend
-```
-
-Build the image:
-
-```bash
-docker build -t quantum-python .
-```
-
-This creates an image named:
-
-```text
-quantum-python
-```
-
-The image contains the Python environment and quantum libraries required by the Quantum Code Lab.
-
-It includes:
-
-- Python 3.11
-- Qiskit
-- Qiskit Aer
-- PennyLane
-- Cirq
-- Jupyter
-- nbconvert
-- ipykernel
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
 ---
 
-## 3. Verify the Docker Image
+### 4. Setup Quantum Execution Service (`backend/executor`)
 
-Run:
+The quantum executor runs user Python code in an isolated environment with Qiskit, PennyLane, and Cirq.
 
-```bash
-docker run --rm quantum-python python -c "import qiskit; import qiskit_aer; import pennylane; import cirq; print('Quantum libraries working!')"
-```
+> [!TIP]
+> **Cloud Executor Available**: If you configured `EXECUTION_SERVICE_URL=https://quantum-executor.onrender.com` in `backend/node-backend/.env.local`, you can **skip** setting up the local executor!
 
-Expected output:
+If you prefer to run the execution service locally:
 
-```text
-Quantum libraries working!
-```
+#### Option A: Run via Docker (Recommended for Isolation)
 
----
+1. Make sure **Docker Desktop** is running.
+2. Build the Docker image:
+   ```bash
+   cd backend/executor
+   docker build -t quantum-executor .
+   ```
+3. Run the container:
+   ```bash
+   docker run -d -p 10000:10000 --name quantum-executor quantum-executor
+   ```
+4. Verify the container is running:
+   ```bash
+   curl http://localhost:10000/health
+   # Response: {"status":"ok"}
+   ```
 
-## 4. Check Docker Images
+#### Option B: Run via Local Python Environment
 
-To see the images installed on your computer:
-
-```bash
-docker images
-```
-
-You should see:
-
-```text
-quantum-python
-```
-
----
-
-## 5. Check Running Containers
-
-To see currently running containers:
-
-```bash
-docker ps
-```
-
-To see all containers, including stopped containers:
-
-```bash
-docker ps -a
-```
-
----
-
-## 6. Stop a Container
-
-If you manually start a container and need to stop it:
-
-```bash
-docker stop <container_id>
-```
-
-For example:
-
-```bash
-docker stop abc123
-```
-
-The Quantum Code Lab normally handles temporary containers automatically.
-
----
-
-## 7. Remove a Container
-
-If you need to remove a stopped container:
-
-```bash
-docker rm <container_id>
-```
-
----
-
-## 8. Remove the Quantum Image
-
-If you need to rebuild the Docker image from scratch:
-
-```bash
-docker rmi quantum-python
-```
-
-Then build it again:
-
-```bash
-docker build -t quantum-python .
-```
-
-> You normally do not need to remove the image. Only rebuild it when `requirements.txt`, the `Dockerfile`, or the Python environment changes.
+1. Navigate to the executor directory:
+   ```bash
+   cd backend/executor
+   ```
+2. (Optional) Create and activate a virtual environment:
+   ```bash
+   python3 -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   ```
+3. Install Python dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Start the FastAPI server:
+   ```bash
+   uvicorn executor:app --host 0.0.0.0 --port 10000
+   ```
 
 ---
 
 # Running the Project
 
-## Start Docker
+To run the complete application, open separate terminals for each service:
 
-Before using the Quantum Code Lab:
-
-1. Open **Docker Desktop**
-2. Wait until Docker is running
-3. Make sure the `quantum-python` image exists
-
-Check:
+### Terminal 1: Node.js Backend
 
 ```bash
-docker images
+cd backend/node-backend
+
+# Development mode (with auto-reload on file change):
+npm run dev
+
+# Or standard start:
+npm start
 ```
 
----
+- **URL**: `http://localhost:4000`
+- **Verify**: Open `http://localhost:4000/health` in your browser or run:
+  ```bash
+  curl http://localhost:4000/health
+  # Response: {"status":"ok","executionServiceConfigured":true}
+  ```
 
-## Start the Backend
-
-Open Terminal 1:
-
-```bash
-cd backend
-node server.js
-```
-
-Backend:
-
-```text
-http://localhost:4000
-```
-
----
-
-## Start the Frontend
-
-Open Terminal 2:
+### Terminal 2: Next.js Frontend
 
 ```bash
 cd frontend
 npm run dev
 ```
 
-Frontend:
+- **URL**: `http://localhost:3000`
+- Open [http://localhost:3000](http://localhost:3000) in your browser to access the platform.
 
-```text
-http://localhost:3000
+### Terminal 3: (Optional) Local Quantum Executor
+
+*Only required if you are not using the cloud-hosted executor.*
+
+```bash
+cd backend/executor
+# If running with Docker:
+docker start quantum-executor
+# Or run new container:
+# docker run -p 10000:10000 --name quantum-executor quantum-executor
+
+# Or if running with Python directly:
+uvicorn executor:app --host 0.0.0.0 --port 10000
 ```
+
+- **URL**: `http://localhost:10000`
+- **Verify**: `curl http://localhost:10000/health` -> `{"status":"ok"}`
 
 ---
 
@@ -345,12 +249,11 @@ http://localhost:3000
 
 The Quantum Code Lab supports:
 
-- Qiskit
-- Qiskit Aer
-- PennyLane
-- Cirq
-- Python
-- Jupyter Notebook (`.ipynb`)
+- **Qiskit & Qiskit Aer**
+- **PennyLane**
+- **Cirq**
+- **Python Standard Library**
+- **Jupyter Notebook (`.ipynb`)**
 
 Example Qiskit Aer program:
 
@@ -379,54 +282,38 @@ print(result.get_counts())
 
 # AI Features
 
-### AI Quantum Tutor
-
-Helps learners understand quantum computing concepts and code.
-
-### Circuit Analysis
-
-Analyzes quantum circuits and provides explanations.
-
-### Circuit Optimization
-
-Provides suggestions for improving quantum circuits.
-
-### Learning Path
-
-Generates learning paths for learners.
+- **AI Quantum Tutor**: Interactive conversational tutor to guide beginners through quantum concepts and debugging.
+- **Circuit Analysis**: Analyzes user-created quantum circuits and explains quantum state evolution, superposition, and entanglement.
+- **Circuit Optimization**: Recommends gate reductions and simplifications to optimize circuit depth and gate count.
+- **Learning Path Generation**: Generates customized study roadmaps based on user skill level and interests.
 
 ---
 
-# Jupyter Notebook Support
+# Docker Maintenance Commands
 
-The Quantum Code Lab also supports Python `.ipynb` notebooks.
+When running the quantum executor container locally:
 
-The notebook runs inside the Docker quantum environment, so the required Python quantum libraries are already available inside the container.
-
----
-
-# Updating the Docker Environment
-
-If you modify:
-
-```text
-backend/requirements.txt
-```
-
-you must rebuild the image:
-
-```bash
-cd backend
-docker build -t quantum-python .
-```
-
-If you modify the `Dockerfile`, rebuild the image as well:
-
-```bash
-docker build -t quantum-python .
-```
-
-You do **not** need to reinstall Qiskit, PennyLane, Cirq, etc. on your host computer.
+- **View running containers**:
+  ```bash
+  docker ps
+  ```
+- **View all containers (including stopped)**:
+  ```bash
+  docker ps -a
+  ```
+- **Stop executor container**:
+  ```bash
+  docker stop quantum-executor
+  ```
+- **Remove executor container**:
+  ```bash
+  docker rm quantum-executor
+  ```
+- **Rebuild image** (after changing `backend/executor/requirements.txt` or `Dockerfile`):
+  ```bash
+  cd backend/executor
+  docker build -t quantum-executor .
+  ```
 
 ---
 
@@ -436,18 +323,22 @@ You do **not** need to reinstall Qiskit, PennyLane, Cirq, etc. on your host comp
 Learn-Quantum-Smoothly/
 │
 ├── backend/
-│   ├── ai/
-│   ├── server.js
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   ├── .dockerignore
-│   ├── .env.example
-│   └── package.json
+│   ├── executor/                # Python Quantum Code Execution Service
+│   │   ├── Dockerfile           # Python 3.11 + Quantum libraries container
+│   │   ├── executor.py          # FastAPI service running /execute endpoint
+│   │   ├── requirements.txt     # Qiskit, PennyLane, Cirq, FastAPI, Uvicorn
+│   │   └── .dockerignore
+│   │
+│   └── node-backend/            # Node.js AI & Gateway Backend
+│       ├── ai/                  # AI prompts, Grok/Groq integration, circuit analysis
+│       ├── .env.local           # Environment variables (PORT, GROQ_API_KEY, etc.)
+│       ├── package.json         # Node dependencies (express, cors)
+│       └── server.js            # Main HTTP API server (port 4000)
 │
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── public/
+├── frontend/                    # Next.js Frontend Application
+│   ├── app/                     # Next.js App Router pages
+│   ├── components/              # React UI components (IDE, Chat, Playground)
+│   ├── public/                  # Static assets
 │   └── package.json
 │
 └── README.md
@@ -457,13 +348,10 @@ Learn-Quantum-Smoothly/
 
 # Important Notes
 
-- Docker Desktop must be running when using the Quantum Code Lab locally.
-- The `quantum-python` Docker image must be built before running quantum Python code.
-- If `requirements.txt` changes, rebuild the Docker image.
-- `.env.local` should never be committed to GitHub.
-- Node.js dependencies are installed using `npm install`.
-- Python quantum dependencies are provided through the Docker image.
-- Users do not need to manually install Qiskit, Qiskit Aer, PennyLane, or Cirq on their host machine when using the Docker-based execution system.
+- The Node backend must be running on port `4000` (or the port specified in `PORT`) for the frontend to communicate with AI and code execution services.
+- The execution service URL can be configured in `backend/node-backend/.env.local`. You can either use the remote Render execution service (`https://quantum-executor.onrender.com`) or run the local Docker/FastAPI container at `http://localhost:10000`.
+- `.env.local` contains sensitive API credentials and should never be committed to Git.
+- Node.js dependencies are installed inside `backend/node-backend/` via `npm install`.
 
 ## License
 
