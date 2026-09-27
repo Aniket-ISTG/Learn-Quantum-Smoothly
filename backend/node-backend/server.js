@@ -587,7 +587,7 @@ async function executeNotebook(
 
   try {
     const response = await fetch(
-      `${EXECUTION_SERVICE_URL}/execute-notebook`,
+      `${EXECUTION_SERVICE_URL}/execute`,
       {
         method: "POST",
 
