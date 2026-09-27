@@ -199,6 +199,13 @@ async function handleChat(req, res) {
 
   console.log("Chat request received");
 
+  if (payload.context?.circuit || payload.context?.circuitJson) {
+    console.log(
+      "Chat request includes active quantum circuit context:",
+      payload.context.circuitSummary || "Quirk circuit attached"
+    );
+  }
+
   if (
     !payload.context ||
     typeof payload.message !== "string" ||

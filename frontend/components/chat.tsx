@@ -7,6 +7,7 @@ import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
+import { useLiveCircuit, getLiveCircuitJson } from "@/lib/circuit-tracker";
 
 type ChatMessage = {
   role: "user" | "assistant";
@@ -72,6 +73,8 @@ export default function Chat() {
   const [loading, setLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
 
+  const { circuitJson, circuit, summary, hasCircuit } = useLiveCircuit();
+
 
 
   const pushUserMessage = (text: string) => {
@@ -112,25 +115,54 @@ export default function Chat() {
     });
   };
 
-  const handleSend = async () => {
-    const text = input.trim();
+  const handleSend = async (overrideText?: unknown) => {
+    const text = (typeof overrideText === "string" ? overrideText : input).trim();
 
     if (!text || loading) return;
 
     const previousMessages = messages;
 
-    setInput("");
+    if (!overrideText) {
+      setInput("");
+    }
     pushUserMessage(text);
     pushAssistantMessage("");
     setLoading(true);
 
     try {
-      const context = {
+      const isPlayground = typeof window !== "undefined" && window.location.pathname.startsWith("/playground");
+      const isSimulator = typeof window !== "undefined" && window.location.pathname.startsWith("/simulator");
+      const isLesson = typeof window !== "undefined" && window.location.pathname.startsWith("/learn/");
+
+      // Active circuit: check react hook state first, fallback to getLiveCircuitJson or window
+      const activeRawJson =
+        circuitJson ||
+        getLiveCircuitJson() ||
+        (typeof window !== "undefined" ? (window as any).__QUIRK_CIRCUIT_JSON__ : null);
+
+      let circuitData = circuit;
+      if (!circuitData && activeRawJson) {
+        try {
+          circuitData = JSON.parse(activeRawJson);
+        } catch {
+          circuitData = null;
+        }
+      }
+
+      const context: Record<string, unknown> = {
         page: {
-          pathname: window.location.pathname,
-          kind: "other",
+          pathname: typeof window !== "undefined" ? window.location.pathname : "/playground",
+          kind: isPlayground ? "playground" : isSimulator ? "simulator" : isLesson ? "lesson" : "other",
         },
       };
+
+      if (activeRawJson) {
+        context.circuit = circuitData || activeRawJson;
+        context.circuitJson = activeRawJson;
+        if (summary) {
+          context.circuitSummary = summary;
+        }
+      }
 
       const res = await fetch(
         `${AI_BACKEND_URL}/api/ai/chat`,
@@ -377,9 +409,21 @@ export default function Chat() {
                   ✦
                 </div>
 
-                <div className="text-sm font-semibold text-[#3a2d27]">
+                <div className="text-sm font-semibold text-[#3a2d27] shrink-0">
                   AI Tutor
                 </div>
+
+                {hasCircuit && (
+                  <div
+                    className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100/90 border border-emerald-300 text-emerald-800 text-[10px] font-medium"
+                    title={`Active Circuit Attached: ${summary}`}
+                  >
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                    <span className="truncate max-w-[130px] sm:max-w-[170px]">
+                      {summary || "Circuit connected"}
+                    </span>
+                  </div>
+                )}
               </div>
 
               <div className="flex items-center gap-2">
@@ -440,6 +484,22 @@ export default function Chat() {
                 text-sm
               "
             >
+              {messages.length === 0 && (
+                <div className="py-6 px-4 text-center flex flex-col items-center justify-center text-slate-600 my-auto">
+                  <div className="h-10 w-10 rounded-full bg-orange-100 border border-orange-200 text-[#b8643e] flex items-center justify-center text-lg mb-2 shadow-sm">
+                    ✦
+                  </div>
+                  <h4 className="text-sm font-semibold text-[#3a2d27]">
+                    Quantum Computing Tutor
+                  </h4>
+                  <p className="text-xs text-[#6b584c] mt-1 max-w-[280px] leading-relaxed">
+                    {hasCircuit
+                      ? `I am synchronized with the circuit on your screen (${summary}). Ask me what it does, how it transforms quantum states, or how to expand it!`
+                      : "Ask me anything about quantum computing, gates, circuits, algorithms, or physics."}
+                  </p>
+                </div>
+              )}
+
               {messages.map((m, i) => (
                 <div
                   key={i}
@@ -626,7 +686,37 @@ export default function Chat() {
                 INPUT
                 ================================================= */}
 
-            <div className="p-2 border-t border-slate-700 shrink-0">
+            {hasCircuit && (
+              <div className="px-3 pt-2 pb-1.5 border-t border-[#eadbc9] bg-[rgba(255,248,242,0.95)] shrink-0">
+                <div className="flex items-center justify-between text-[11px] text-[#7c6355] mb-1.5 font-medium">
+                  <span className="flex items-center gap-1">
+                    <span className="text-amber-600">⚡</span> Circuit on screen:
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-semibold truncate max-w-[190px]">
+                    {summary}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  {[
+                    "What does my circuit do?",
+                    "What quantum state is created?",
+                    "Check circuit for errors",
+                    "How can I optimize this?",
+                  ].map((promptText) => (
+                    <button
+                      key={promptText}
+                      onClick={() => handleSend(promptText)}
+                      disabled={loading}
+                      className="text-[10px] px-2 py-0.5 rounded bg-white border border-[#e2d0be] text-[#5a4639] hover:bg-[#faede3] hover:text-[#934927] hover:border-[#d99d75] transition disabled:opacity-50 text-left shadow-[0_1px_2px_rgba(0,0,0,0.03)]"
+                    >
+                      {promptText}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div className={`p-2 shrink-0 ${hasCircuit ? "border-t border-[#f0e3d5]" : "border-t border-[#eadbc9]"}`}>
               <textarea
                 value={input}
                 onChange={(e) => {
@@ -636,6 +726,8 @@ export default function Chat() {
                 placeholder={
                   loading
                     ? "Waiting for response…"
+                    : hasCircuit
+                    ? "Ask about this circuit or quantum concepts…"
                     : "Ask a question"
                 }
                 className="

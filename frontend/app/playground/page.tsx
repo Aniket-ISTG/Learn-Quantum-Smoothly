@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { PlatformHeader } from "@/components/platform/header";
+import { setLiveCircuit } from "@/lib/circuit-tracker";
 
 const QuirkCircuit = dynamic(
   () => import("@/components/quantum/quirk-circuit").then((mod) => mod.QuirkCircuit),
@@ -68,6 +69,9 @@ export default function PlaygroundPage() {
 
           <QuirkCircuit
             key={quirkReloadKey}
+            onCircuitChange={(circuitJson) => {
+              setLiveCircuit(circuitJson);
+            }}
             onAdvancedGatesChanged={handleAdvancedGatesChange}
             onReady={() => setIsQuirkLoading(false)}
           />

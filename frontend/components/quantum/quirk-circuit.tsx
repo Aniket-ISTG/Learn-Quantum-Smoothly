@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { setLiveCircuit } from "@/lib/circuit-tracker";
 
 export interface QuirkCircuitProps {
   initialCircuit?: string;
@@ -251,6 +252,7 @@ export function QuirkCircuit({
         quirkInstance = initQuirk({
           initialCircuit,
           onCircuitChange: (json: string) => {
+            setLiveCircuit(json);
             if (onCircuitChange) {
               onCircuitChange(json);
             }
@@ -258,6 +260,14 @@ export function QuirkCircuit({
         });
 
         setIsLoaded(true);
+        if (quirkInstance && typeof quirkInstance.getCircuitJson === "function") {
+          try {
+            const current = quirkInstance.getCircuitJson();
+            if (current) {
+              setLiveCircuit(current);
+            }
+          } catch (_) {}
+        }
         onReady?.();
       } catch (err: any) {
         console.error("Failed to initialize Quirk-E component:", err);

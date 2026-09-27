@@ -110,11 +110,26 @@ function initExports(revision, mostRecentStats, obsIsAnyOverlayShowing) {
         setupButtonElementCopyToClipboard(copyButton, jsonTextElement, copyResultElement);
         revision.latestActiveCommit().subscribe(jsonText => {
             //noinspection UnusedCatchParameterJS
+            let val = null;
             try {
-                let val = JSON.parse(jsonText);
+                val = JSON.parse(jsonText);
                 jsonTextElement.textContent = JSON.stringify(val, null, '  ');
             } catch (_) {
                 jsonTextElement.textContent = jsonText;
+            }
+
+            if (typeof window !== "undefined") {
+                window.__QUIRK_CIRCUIT_JSON__ = jsonText;
+                window.__QUIRK_CIRCUIT__ = val;
+                try {
+                    window.dispatchEvent(
+                        new CustomEvent("quirk-circuit-change", {
+                            detail: { jsonText, circuit: val },
+                        })
+                    );
+                } catch (e) {
+                    console.warn("Failed to dispatch quirk-circuit-change event", e);
+                }
             }
         });
     })();
