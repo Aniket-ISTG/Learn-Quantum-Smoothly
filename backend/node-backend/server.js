@@ -39,7 +39,7 @@ const EXECUTION_SERVICE_URL = (
   process.env.EXECUTION_SERVICE_URL || ""
 ).replace(/\/+$/, "");
 
-const EXECUTION_TIMEOUT = 20000;
+const EXECUTION_TIMEOUT = 120000;
 
 // ========================================
 // Import AI modules
