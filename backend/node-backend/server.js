@@ -454,88 +454,123 @@ async function executeRemotePython(
   timeout = EXECUTION_TIMEOUT
 ) {
   if (!EXECUTION_SERVICE_URL) {
-    throw new Error(
-      "EXECUTION_SERVICE_URL is not configured."
-    );
+    throw new Error("EXECUTION_SERVICE_URL is not configured.");
   }
 
-  const controller = new AbortController();
+  const maxAttempts = 3;
+  const retryableStatuses = new Set([502, 503, 504]);
 
-  const timer = setTimeout(() => {
-    controller.abort();
-  }, timeout);
+  let lastError;
 
-  try {
-    const response = await fetch(
-      `${EXECUTION_SERVICE_URL}/execute`,
-      {
-        method: "POST",
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const controller = new AbortController();
 
-        headers: {
-          "Content-Type": "application/json",
-        },
-
-        body: JSON.stringify({
-          code,
-          framework,
-        }),
-
-        signal: controller.signal,
-      }
-    );
-
-    const rawText = await response.text();
-
-    let payload = {};
+    // Give the current attempt the configured timeout
+    const timer = setTimeout(() => {
+      controller.abort();
+    }, timeout);
 
     try {
-      payload = rawText
-        ? JSON.parse(rawText)
-        : {};
-    } catch {
-      payload = {
-        output: rawText,
-      };
-    }
+      console.log(
+        `Calling execution service (attempt ${attempt}/${maxAttempts})...`
+      );
 
-    if (!response.ok) {
+      const response = await fetch(
+        `${EXECUTION_SERVICE_URL}/execute`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            code,
+            framework,
+          }),
+          signal: controller.signal,
+        }
+      );
+
+      const rawText = await response.text();
+
+      let payload = {};
+
+      try {
+        payload = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        payload = {
+          output: rawText,
+        };
+      }
+
+      // Successful response
+      if (response.ok) {
+        return {
+          output: payload?.output ?? payload?.stdout ?? "",
+          warning: payload?.warning ?? payload?.stderr ?? "",
+          error: payload?.error ?? "",
+          raw: payload,
+        };
+      }
+
+      // Temporary Render error → retry
+      if (
+        retryableStatuses.has(response.status) &&
+        attempt < maxAttempts
+      ) {
+        console.warn(
+          `Execution service returned ${response.status}. ` +
+          `Retrying in ${attempt * 5} seconds...`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, attempt * 5000)
+        );
+
+        continue;
+      }
+
+      // Non-retryable error OR all retries exhausted
       throw new Error(
         payload?.error ||
-        payload?.message ||
-        payload?.stderr ||
-        `Execution service returned HTTP ${response.status}`
+          payload?.message ||
+          payload?.stderr ||
+          `Execution service returned HTTP ${response.status}`
       );
+    } catch (error) {
+      lastError = error;
+
+      // Request timeout
+      if (error?.name === "AbortError") {
+        throw new Error(
+          "Quantum execution service timed out."
+        );
+      }
+
+      // Network-level error
+      if (attempt < maxAttempts) {
+        console.warn(
+          `Execution service request failed: ${error.message}. ` +
+          `Retrying in ${attempt * 5} seconds...`
+        );
+
+        await new Promise((resolve) =>
+          setTimeout(resolve, attempt * 5000)
+        );
+
+        continue;
+      }
+
+      throw error;
+    } finally {
+      clearTimeout(timer);
     }
-
-    return {
-      output:
-        payload?.output ??
-        payload?.stdout ??
-        "",
-
-      warning:
-        payload?.warning ??
-        payload?.stderr ??
-        "",
-
-      error:
-        payload?.error ??
-        "",
-
-      raw: payload,
-    };
-  } catch (error) {
-    if (error?.name === "AbortError") {
-      throw new Error(
-        "Quantum execution service timed out."
-      );
-    }
-
-    throw error;
-  } finally {
-    clearTimeout(timer);
   }
+
+  throw lastError || new Error("Execution service failed.");
 }
+
+
+
 // ========================================
 // Execute Jupyter Notebook
 // ========================================
