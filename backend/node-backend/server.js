@@ -448,6 +448,36 @@ async function handleLearningPath(req, res) {
 // Docker Python Runner
 // ========================================
 
+async function waitForExecutionService(timeout = EXECUTION_TIMEOUT) {
+  const start = Date.now();
+
+  while (Date.now() - start < timeout) {
+    try {
+      const response = await fetch(`${EXECUTION_SERVICE_URL}/health`);
+
+      if (response.ok) {
+        console.log("Execution service is ready.");
+        return true;
+      }
+
+      console.log(
+        `Execution service health check returned ${response.status}.`
+      );
+    } catch (error) {
+      console.log(
+        `Waiting for execution service to wake up: ${error.message}`
+      );
+    }
+
+    // Wait 3 seconds before checking again
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+
+  throw new Error(
+    "Quantum execution service did not become ready within the timeout."
+  );
+}
+
 async function executeRemotePython(
   code,
   framework,
@@ -457,116 +487,73 @@ async function executeRemotePython(
     throw new Error("EXECUTION_SERVICE_URL is not configured.");
   }
 
-  const maxAttempts = 3;
-  const retryableStatuses = new Set([502, 503, 504]);
+  // First make sure the Render executor is awake.
+  console.log("Checking quantum execution service...");
 
-  let lastError;
+  await waitForExecutionService(timeout);
 
-  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const controller = new AbortController();
+  console.log("Quantum execution service is ready. Running code...");
 
-    // Give the current attempt the configured timeout
-    const timer = setTimeout(() => {
-      controller.abort();
-    }, timeout);
+  const controller = new AbortController();
+
+  const timer = setTimeout(() => {
+    controller.abort();
+  }, timeout);
+
+  try {
+    const response = await fetch(
+      `${EXECUTION_SERVICE_URL}/execute`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          code,
+          framework,
+        }),
+        signal: controller.signal,
+      }
+    );
+
+    const rawText = await response.text();
+
+    let payload = {};
 
     try {
-      console.log(
-        `Calling execution service (attempt ${attempt}/${maxAttempts})...`
-      );
+      payload = rawText ? JSON.parse(rawText) : {};
+    } catch {
+      payload = {
+        output: rawText,
+      };
+    }
 
-      const response = await fetch(
-        `${EXECUTION_SERVICE_URL}/execute`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            code,
-            framework,
-          }),
-          signal: controller.signal,
-        }
-      );
-
-      const rawText = await response.text();
-
-      let payload = {};
-
-      try {
-        payload = rawText ? JSON.parse(rawText) : {};
-      } catch {
-        payload = {
-          output: rawText,
-        };
-      }
-
-      // Successful response
-      if (response.ok) {
-        return {
-          output: payload?.output ?? payload?.stdout ?? "",
-          warning: payload?.warning ?? payload?.stderr ?? "",
-          error: payload?.error ?? "",
-          raw: payload,
-        };
-      }
-
-      // Temporary Render error → retry
-      if (
-        retryableStatuses.has(response.status) &&
-        attempt < maxAttempts
-      ) {
-        console.warn(
-          `Execution service returned ${response.status}. ` +
-          `Retrying in ${attempt * 5} seconds...`
-        );
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, attempt * 5000)
-        );
-
-        continue;
-      }
-
-      // Non-retryable error OR all retries exhausted
+    if (!response.ok) {
       throw new Error(
         payload?.error ||
           payload?.message ||
           payload?.stderr ||
           `Execution service returned HTTP ${response.status}`
       );
-    } catch (error) {
-      lastError = error;
-
-      // Request timeout
-      if (error?.name === "AbortError") {
-        throw new Error(
-          "Quantum execution service timed out."
-        );
-      }
-
-      // Network-level error
-      if (attempt < maxAttempts) {
-        console.warn(
-          `Execution service request failed: ${error.message}. ` +
-          `Retrying in ${attempt * 5} seconds...`
-        );
-
-        await new Promise((resolve) =>
-          setTimeout(resolve, attempt * 5000)
-        );
-
-        continue;
-      }
-
-      throw error;
-    } finally {
-      clearTimeout(timer);
     }
-  }
 
-  throw lastError || new Error("Execution service failed.");
+    return {
+      output: payload?.output ?? payload?.stdout ?? "",
+      warning: payload?.warning ?? payload?.stderr ?? "",
+      error: payload?.error ?? "",
+      raw: payload,
+    };
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw new Error(
+        "Quantum execution service timed out."
+      );
+    }
+
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 
