@@ -582,9 +582,9 @@ export default function CodeIDE() {
               Python (.py)
             </option>
 
-            <option value="notebook">
+            {/* <option value="notebook">
               Jupyter (.ipynb)
-            </option>
+            </option> */}
           </select>
 
           <label
