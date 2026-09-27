@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Chat from "@/components/chat";
+import ExecutorWakeup from "@/components/ExecutorWakeup";
+
 
 export const metadata: Metadata = {
   title: "Qubit Lab — Learn quantum by doing",
@@ -11,6 +13,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className="h-full antialiased" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="min-h-full flex flex-col">
+        <ExecutorWakeup />
         {children}
         <Chat />
       </body>
