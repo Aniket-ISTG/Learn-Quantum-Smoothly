@@ -13,6 +13,8 @@ export interface CircuitSummaryInfo {
   summaryText: string;
 }
 
+
+
 /**
  * Parses Quirk circuit JSON and computes a friendly summary of wires and gates.
  */
